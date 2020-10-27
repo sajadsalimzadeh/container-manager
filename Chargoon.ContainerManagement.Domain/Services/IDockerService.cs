@@ -1,4 +1,5 @@
 ﻿using Chargoon.ContainerManagement.Domain.Dtos;
+using Chargoon.ContainerManagement.Domain.Dtos.Dockers;
 using Docker.DotNet.Models;
 using System.Collections.Generic;
 using System.IO;
@@ -8,10 +9,14 @@ namespace Chargoon.ContainerManagement.Domain.Services
     public interface IDockerService
     {
         GetArchiveFromContainerResponse ArchiveContainer(string id, GetArchiveFromContainerParameters dto);
+        void Deploy(string stackName, DockerCompose dc);
         void ExtractArchiveToContainerAsync(string id, ContainerPathStatParameters dto, Stream stream);
-        List<ContainerListResponse> GetAllContainers();
-        List<ImagesListResponse> GetAllImages();
-        List<ContainerFileSystemChangeResponse> GetContainerChanges(string id);
+        IEnumerable<ContainerListResponse> GetAllContainer();
+        IEnumerable<ImagesListResponse> GetAllImage();
+        IEnumerable<NodeListResponse> GetAllNode();
+        IEnumerable<SwarmService> GetAllService();
+        IEnumerable<SwarmService> GetAllServiceByStackName(string stackName);
+        IEnumerable<ContainerFileSystemChangeResponse> GetContainerChanges(string id);
         Stream GetContainerExport(string id);
         ContainerInspectResponse GetContainerInspect(string id);
         string GetContainerLog(string id);
@@ -21,10 +26,16 @@ namespace Chargoon.ContainerManagement.Domain.Services
         void RemoveContainer(string id);
         void RenameContainer(string id, ContainerRenameParameters dto);
         void RestartContainer(string id);
-        void RunCommandContainer(string id, ContainerExecCreateParameters dto);
         bool StartContainer(string id);
         bool StopContainer(string id);
+        void SystemPrune();
+        void Undeploy(string stackName, string prefix);
         void UnPauseContainer(string id);
+        string ExecCommandContainer(string id, string command);
         ContainerUpdateResponse UpdateContainer(string id, ContainerUpdateParameters dto);
+        IEnumerable<ContainerExecInspectResponse> GetAllContainerCommand(string id);
+        ContainerExecInspectResponse GetContainerExecInspect(string id);
+        string GetExecCommandContainerLog(string id);
+        void ClearExitedCommands();
     }
 }

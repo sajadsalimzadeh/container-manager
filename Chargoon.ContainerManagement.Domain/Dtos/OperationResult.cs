@@ -10,10 +10,26 @@ namespace Chargoon.ContainerManagement.Domain.Dtos
         public int Code { get; set; } = 0;
         public string Message { get; set; }
 
+        public OperationResult()
+        {
+
+        }
+
+        public OperationResult(bool success)
+        {
+            Success = success;
+        }
+
+        public OperationResult(bool success, string message) : this(success)
+        {
+            Message = message;
+        }
+
         public static OperationResult Succeed()
         {
             return new OperationResult();
         }
+
         public static OperationResult Failed(string message)
         {
             return new OperationResult()
@@ -31,6 +47,14 @@ namespace Chargoon.ContainerManagement.Domain.Dtos
         {
 
         }
+        public OperationResult(bool success) : base(success)
+        {
+        }
+
+        public OperationResult(bool success, string message) : base(success, message)
+        {
+        }
+
         public OperationResult(T data)
         {
             Data = data;

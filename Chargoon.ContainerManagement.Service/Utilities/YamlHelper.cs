@@ -1,3 +1,4 @@
+using Chargoon.ContainerManagement.Domain.Attributes;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,24 +8,68 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Service.Utilities
 {
-    [AttributeUsage(AttributeTargets.Property)]
-    internal class YamlAttribute : Attribute
-    {
-        public string Key { get; set; }
-
-        public YamlAttribute(string key)
-        {
-            Key = key;
-        }
-    }
-
-
     public class YamlHelper
     {
+        enum NodeType
+        {
+            None = 0,
+            Array = 1,
+            Object = 2,
+        }
         class Node
         {
             public string Key { get; set; }
             public object Value { get; set; }
+            public string Prefix { get; set; }
+            public NodeType Type { get; set; } = NodeType.None;
+            public bool WithQuotes { get; set; }
+
+            private string RepeatString(string str, int count)
+            {
+                var tmp = string.Empty;
+                for (int i = 0; i < count; i++)
+                {
+                    tmp += str;
+                }
+                return tmp;
+            }
+
+            private string ToYaml(int indent)
+            {
+                var type = Value.GetType();
+
+                if (typeof(int).IsAssignableFrom(type) || typeof(string).IsAssignableFrom(type))
+                {
+                    return RepeatString("  ", indent) + Prefix +
+                        (string.IsNullOrEmpty(Key) ? "- " : Key.ToLower() + ": ") +
+                        (WithQuotes ? $"'{Value}'" : Value.ToString());
+                }
+                else if (typeof(IEnumerable).IsAssignableFrom(type))
+                {
+                    var flag = false;
+                    var sb = new StringBuilder();
+                    if (Value is IEnumerable enumerable)
+                    {
+                        if (!string.IsNullOrEmpty(Key)) sb.AppendLine(RepeatString("  ", indent) + Prefix + Key.ToLower() + ":");
+                        foreach (var item in enumerable)
+                        {
+                            if (item is Node childNode)
+                            {
+                                var line = childNode.ToYaml(indent + 1);
+                                sb.AppendLine(line);
+                            }
+                            flag = true;
+                        }
+                    }
+                    if (flag) return sb.ToString();
+                    return "";
+                }
+                return base.ToString();
+            }
+            public string ToYaml()
+            {
+                return ToYaml(-1);
+            }
         }
 
         private Node Root;
@@ -36,15 +81,16 @@ namespace Chargoon.ContainerManagement.Service.Utilities
 
         private Node Parse(object obj)
         {
+            if (obj == null) return null;
             var result = new Node();
             var type = obj.GetType();
             if (typeof(int).IsAssignableFrom(type))
             {
-                result.Value = obj;
+                result.Value = Convert.ToInt32(obj);
             }
             else if (typeof(string).IsAssignableFrom(type))
             {
-                result.Value = obj;
+                result.Value = obj.ToString();
             }
             else if (typeof(IEnumerable).IsAssignableFrom(type))
             {
@@ -53,7 +99,40 @@ namespace Chargoon.ContainerManagement.Service.Utilities
                     var children = new List<Node>();
                     foreach (var item in enumerable)
                     {
-                        children.Add(Parse(item));
+                        var keyProp = item.GetType().GetProperty("Key");
+                        var valueProp = item.GetType().GetProperty("Value");
+                        if (keyProp != null && valueProp != null)
+                        {
+                            var childNode = Parse(valueProp.GetValue(item));
+                            if (childNode != null)
+                            {
+                                childNode.Key = keyProp.GetValue(item).ToString();
+                                children.Add(childNode);
+                            }
+                        }
+                        else
+                        {
+                            var childNode = Parse(item);
+                            if (childNode != null)
+                            {
+                                if (childNode.Type == NodeType.Object)
+                                {
+                                    if (childNode.Value is IEnumerable childEnumerable)
+                                    {
+                                        var childIndex = 0;
+                                        foreach (var childValue in childEnumerable)
+                                        {
+                                            if (childValue is Node childValueNode)
+                                            {
+                                                childValueNode.Prefix = (childIndex == 0 ? "- " : "  ");
+                                            }
+                                            childIndex++;
+                                        }
+                                    }
+                                }
+                                children.Add(childNode);
+                            }
+                        }
                     }
                     result.Value = children;
                 }
@@ -65,52 +144,27 @@ namespace Chargoon.ContainerManagement.Service.Utilities
                 {
                     var value = property.GetValue(obj);
                     var node = Parse(value);
-                    node.Key = property.Name;
-                    var attr = property.GetCustomAttribute<YamlAttribute>();
-                    if (attr != null) node.Key = attr.Key;
-                    children.Add(node);
+                    if (node != null)
+                    {
+                        node.Key = property.Name;
+                        var attr = property.GetCustomAttribute<YamlAttribute>();
+                        if (attr != null)
+                        {
+                            if (attr.IsIgnore) continue;
+                            if (!string.IsNullOrEmpty(attr.Key)) node.Key = attr.Key;
+                            node.WithQuotes = attr.WithQuotes;
+                        }
+                        children.Add(node);
+                    }
                 }
+                result.Type = NodeType.Object;
                 result.Value = children;
             }
             return result;
         }
-        private string RepeatChar(char ch, int count)
+        public string ToYaml()
         {
-            var str = string.Empty;
-            for (int i = 0; i < count; i++)
-            {
-                str += ch;
-            }
-            return str;
-        }
-        private string ToString(Node node, int level)
-        {
-            var sb = new StringBuilder();
-            var type = node.Value.GetType();
-            if (typeof(IEnumerable).IsAssignableFrom(type))
-            {
-                if (node.Value is IEnumerable enumerable)
-                {
-                    sb.AppendLine($"{node.Key}:");
-                    foreach (var item in enumerable)
-                    {
-                        if (item is Node childNode)
-                        {
-                            var line = RepeatChar('\t', level) + (string.IsNullOrEmpty(childNode.Key) ? "- " : childNode.Key) + ToString(childNode, level + 1);
-                            sb.AppendLine(line);
-                        }
-                    }
-                }
-            }
-            else
-            {
-                sb.Append(node.Value.ToString());
-            }
-            return sb.ToString();
-        }
-        public override string ToString()
-        {
-            return ToString(Root, 0);
+            return Root.ToYaml();
         }
     }
 }

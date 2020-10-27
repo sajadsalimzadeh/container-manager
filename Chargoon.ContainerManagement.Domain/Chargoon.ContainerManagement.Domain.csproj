@@ -5,7 +5,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Data\UnitOfWorks\" />
+    <Compile Remove="Data\UnitOfWorks\**" />
+    <EmbeddedResource Remove="Data\UnitOfWorks\**" />
+    <None Remove="Data\UnitOfWorks\**" />
   </ItemGroup>
 
   <ItemGroup>
@@ -13,6 +15,7 @@
     <PackageReference Include="Microsoft.Extensions.Caching.Abstractions" Version="3.1.9" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="3.1.9" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="3.1.9" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" Version="3.1.9" />
   </ItemGroup>
 
 </Project>

@@ -4,12 +4,16 @@ using Chargoon.ContainerManagement.Domain.Data.Repositories;
 using Chargoon.ContainerManagement.Domain.Models;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service;
+using Chargoon.ContainerManagement.WebApi.Helper;
 using Chargoon.ContainerManagement.WebApi.Helpers;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Newtonsoft.Json.Serialization;
+using Serilog;
+using Serilog.Events;
 
 namespace Chargoon.ContainerManagement.WebApi
 {
@@ -21,13 +25,10 @@ namespace Chargoon.ContainerManagement.WebApi
         }
 
         public IConfiguration Configuration { get; }
-        public IServiceCollection Services { get; set; }
 
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            Services = services;
-
             services.AddControllers();
             services.AddMemoryCache();
             services.AddSingleton(Configuration);
@@ -35,23 +36,14 @@ namespace Chargoon.ContainerManagement.WebApi
             services.AddHttpContextAccessor();
 
             // configure strongly typed settings object
-            services.Configure<AppSettings>(Configuration.GetSection("AppSettings"));
+            services.Configure<AppSettings>(Configuration);
 
             // Register the Swagger generator, defining 1 or more Swagger documents
             services.AddSwaggerGen();
 
-            services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IInstanceRepository, InstanceRepository>();
-
-            services.AddScoped<IAuthenticationService, AuthenticationService>();
-            services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IDockerService, DockerService>();
-            services.AddScoped<IInstanceService, InstanceService>();
-
-            RegisterHangfire.Register(services);
-
-            var migrator = new Migrator(Configuration);
-            migrator.Up();
+            services.AddLogger();
+            services.AddHangfire();
+            services.AddContainerManagement();
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
@@ -71,16 +63,18 @@ namespace Chargoon.ContainerManagement.WebApi
                     c.SwaggerEndpoint("/swagger/v1/swagger.json", "My API V1");
                 });
             }
-            app.AddExceptionHandler();
+            RegisterExceptionHandler.UseExceptionHandler(app);
             app.UseHttpsRedirection();
 
             app.UseRouting();
 
+            app.UseHangfire();
+
             // global cors policy
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
-            // custom jwt auth middleware
-            app.UseMiddleware<JwtMiddleware>();
+            app.UseJsonWebToken();
+            //app.UseLogger();
 
             app.UseEndpoints(endpoints =>
             {

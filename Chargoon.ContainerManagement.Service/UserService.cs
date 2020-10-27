@@ -1,45 +1,70 @@
 ﻿using Chargoon.ContainerManagement.Domain.Data.Repositories;
+using Chargoon.ContainerManagement.Domain.Dtos.Instances;
 using Chargoon.ContainerManagement.Domain.Dtos.Users;
-using Chargoon.ContainerManagement.Domain.Models;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service.Mappings;
-using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.DependencyInjection;
+using System;
 using System.Collections.Generic;
-using System.Linq;
 
 namespace Chargoon.ContainerManagement.Service
 {
     public class UserService : IUserService
     {
-        private readonly AppSettings appSettings;
-        private readonly IMemoryCache memoryCache;
-        private readonly IConfiguration configuration;
+        private readonly IInstanceRepository instanceRepository;
+        private readonly IServiceProvider services;
         private readonly IUserRepository userRepository;
         private readonly string teamSpace;
 
         public UserService(
-            IOptions<AppSettings> appSettings,
-            IMemoryCache memoryCache,
+            IInstanceRepository instanceRepository,
             IConfiguration configuration,
+            IServiceProvider services,
             IUserRepository userRepository)
         {
-            this.memoryCache = memoryCache;
-            this.configuration = configuration;
+            this.instanceRepository = instanceRepository;
+            this.services = services;
             this.userRepository = userRepository;
-            this.appSettings = appSettings.Value;
             teamSpace = configuration.GetSection("Volumes").GetSection("TeamSpace").Value;
         }
 
-        public List<UserGetDto> GetAll()
+        public IEnumerable<UserGetDto> GetAll()
         {
-            return userRepository.GetAll().ToDto().ToList();
+            var users = userRepository.GetAll();
+            foreach (var user in users)
+            {
+                user.Instances = instanceRepository.GetAllByUserId(user.Id);
+            }
+            return users.ToDto();
         }
 
         public UserGetDto GetById(int id)
         {
             return userRepository.Get(id).ToDto();
+        }
+
+        public UserGetDto Add(UserAddDto dto)
+        {
+            var instanceService = services.GetService<IInstanceService>();
+            var user = userRepository.Insert(dto.ToDataModel()).ToDto();
+
+            var instances = new List<InstanceGetDto>();
+            var instanceNames = dto.Instances?.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            foreach (var instanceName in instanceNames)
+            {
+                var instance = instanceService.Add(new InstanceAddDto()
+                {
+                    UserId = user.Id,
+                    Name = instanceName
+                });
+
+                instances.Add(instance);
+            }
+
+            user.Instances = instances;
+
+            return user;
         }
     }
 }

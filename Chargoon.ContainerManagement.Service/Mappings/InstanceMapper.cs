@@ -4,44 +4,66 @@ using Chargoon.ContainerManagement.Domain.Models;
 using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 
 namespace Chargoon.ContainerManagement.Service.Mappings
 {
     public static class InstanceMapper
     {
-        private static InstanceGetDto MergeEnvironments(this InstanceGetDto dto)
-        {
-            var basePort = (dto.UserId * 1000) + (dto.Id * 10);
-            var envs = dto.Environments;
-            if (string.IsNullOrEmpty(envs.Type)) envs.Type = "full"; 
-            if (string.IsNullOrEmpty(envs.Branch)) envs.Branch = "Release";
-            if (string.IsNullOrEmpty(envs.DatabaseUsername)) envs.DatabaseUsername = "didgah";
-            if (string.IsNullOrEmpty(envs.DatabasePassword)) envs.DatabasePassword = "lfdc82zo";
-            if (string.IsNullOrEmpty(envs.BuildVersion)) envs.BuildVersion = $"{DateTime.Now:yyyyy.MM.dd}";
-            if (string.IsNullOrEmpty(envs.ContainerTag)) envs.ContainerTag = "CONTAINER_TAG";
-
-            envs.User = dto.User.Username;
-            envs.ComposeProjectName = $"{dto.User.Username}_{dto.Name}";
-            envs.Registry = "dockerhub:5001";
-            envs.SqlServerPort = (basePort + 0);
-            envs.FileManagerPort = (basePort + 1);
-            envs.Didgah4Port = (basePort + 4);
-            envs.Didgah5Port = (basePort + 5);
-            return dto;
-        }
 
         public static InstanceGetDto ToDto(this Instance instance)
         {
-            return new InstanceGetDto()
+            var dto = new InstanceGetDto()
             {
                 Id = instance.Id,
-                UserId = instance.UserId,
+                Code = instance.Code,
                 Name = instance.Name,
-                Environments = JsonConvert.DeserializeObject<Environments>(instance.Environments) ?? new Environments(),
+                UserId = instance.UserId,
+                TemplateId = instance.TemplateId,
+                Environments = (!string.IsNullOrEmpty(instance.Environments) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(instance.Environments) : new Dictionary<string, string>()),
 
-                User = (instance.User != null ? instance.User.ToDto() : null)
+                User = (instance.User != null ? instance.User.ToDto() : null),
+                Template = (instance.Template != null ? instance.Template.ToDto() : null)
             }.MergeEnvironments();
+
+            return dto;
+        }
+
+        public static IEnumerable<InstanceGetDto> ToDto(this IEnumerable<Instance> instances)
+        {
+            return instances.Select(x => x.ToDto());
+        }
+
+        private static InstanceGetDto MergeEnvironments(this InstanceGetDto dto)
+        {
+            var envs = dto.Environments;
+            var basePort = (dto.UserId * 1000) + (dto.Code * 100);
+
+            envs["BASE_PORT"] = (basePort / 100).ToString();
+            envs["REGISTERY"] = "dockerhub:5001";
+            envs["CODE"] = dto.Code.ToString();
+
+            if (dto.User != null)
+            {
+                envs["COMPOSE_PROJECT_NAME"] = $"{dto.User.Username}_{dto.Name}";
+                envs["USER"] = dto.User.Username;
+            }
+
+            if (dto.Template != null)
+            {
+                var defaultEnvironments = dto.Template.Environments;
+
+                foreach (var item in defaultEnvironments)
+                {
+                    if (!envs.ContainsKey(item.Key)) envs[item.Key] = item.Value;
+                    else if (string.IsNullOrEmpty(envs[item.Key])) envs[item.Key] = item.Value;
+                }
+
+                envs["TEMPLATE"] = dto.Template.Name;
+            }
+
+            return dto;
         }
     }
 }

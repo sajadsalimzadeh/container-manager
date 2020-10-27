@@ -14,13 +14,30 @@ namespace Chargoon.ContainerManagement.WebApi.Helpers
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Method)]
     public class AuthAttribute : Attribute, IAuthorizationFilter
     {
+        public IEnumerable<string> Roles { get; set; }
+        public AuthAttribute()
+        {
+
+        }
+        public AuthAttribute(string roles)
+        {
+            Roles = roles.Split(',', StringSplitOptions.RemoveEmptyEntries);
+        }
         public void OnAuthorization(AuthorizationFilterContext context)
         {
             var user = (UserGetDto)context.HttpContext.Items["User"];
             if (user == null)
             {
-                // not logged in
                 context.Result = new JsonResult(new { message = "Unauthorized" }) { StatusCode = StatusCodes.Status401Unauthorized };
+            }
+            else if (Roles?.Count() > 0)
+            {
+                var userRoles = user.Roles;
+                foreach (var item in Roles)
+                {
+                    if (userRoles.Contains(item)) return;
+                }
+                context.Result = new JsonResult(new { message = "Access Denied" }) { StatusCode = StatusCodes.Status403Forbidden };
             }
         }
     }

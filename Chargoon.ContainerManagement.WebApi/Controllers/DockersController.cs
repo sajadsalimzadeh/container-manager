@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using Chargoon.ContainerManagement.Domain.Dtos;
 using Chargoon.ContainerManagement.Domain.Services;
+using Chargoon.ContainerManagement.WebApi.Filters;
 using Docker.DotNet.Models;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,7 +12,6 @@ using Microsoft.AspNetCore.Mvc;
 namespace Chargoon.ContainerManagement.WebApi.Controllers
 {
     [Route("api/[controller]")]
-    [ApiController]
     public class DockersController : ControllerBase
     {
         private readonly IDockerService dockerService;
@@ -21,16 +21,22 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
             this.dockerService = imageService;
         }
 
-        [HttpGet("Images")]
-        public OperationResult<List<ImagesListResponse>> GetAllImages()
+        [HttpGet("Images"), Log]
+        public OperationResult<IEnumerable<ImagesListResponse>> GetAllImages()
         {
-            return OperationResult<List<ImagesListResponse>>.Succeed(dockerService.GetAllImages());
+            return new OperationResult<IEnumerable<ImagesListResponse>>(dockerService.GetAllImage());
         }
 
-        [HttpGet("Containers")]
-        public OperationResult<List<ContainerListResponse>> GetAllContainers()
+        [HttpGet("Containers"), Log]
+        public OperationResult<IEnumerable<ContainerListResponse>> GetAllContainers()
         {
-            return OperationResult<List<ContainerListResponse>>.Succeed(dockerService.GetAllContainers());
+            return new OperationResult<IEnumerable<ContainerListResponse>>(dockerService.GetAllContainer());
+        }
+
+        [HttpGet("Commands/{id}/Log"), Log]
+        public OperationResult<string> GetCommandLog(string id)
+        {
+            return new OperationResult<string>(dockerService.GetExecCommandContainerLog(id));
         }
     }
 }

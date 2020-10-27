@@ -25,36 +25,36 @@ namespace Chargoon.ContainerManagement.Data
             return obj;
         }
 
-        public IEnumerable<TEntity> GetAll()
+        public virtual IEnumerable<TEntity> GetAll()
         {
             return conn.Find<TEntity>();
         }
 
-        public TEntity Get(TPrimaryKey key)
+        public virtual TEntity Get(TPrimaryKey key)
         {
             var obj = SetKey(Activator.CreateInstance<TEntity>(), key);
             return conn.Get(obj);
         }
 
-        public TEntity Insert(TEntity obj)
+        public virtual TEntity Insert(TEntity obj)
         {
             conn.Insert(obj);
             return obj;
         }
 
-        public TEntity Update(TEntity obj)
+        public virtual TEntity Update(TEntity obj)
         {
             conn.Update(obj);
             return obj;
         }
 
-        public TEntity Delete(TEntity obj)
+        public virtual TEntity Delete(TEntity obj)
         {
             conn.Delete(obj);
             return obj;
         }
 
-        public TEntity Delete(TPrimaryKey key)
+        public virtual TEntity Delete(TPrimaryKey key)
         {
             var obj = Get(key);
             return Delete(obj);

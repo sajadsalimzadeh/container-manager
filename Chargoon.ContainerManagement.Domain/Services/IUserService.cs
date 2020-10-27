@@ -8,7 +8,8 @@ namespace Chargoon.ContainerManagement.Domain.Services
 {
     public interface IUserService
     {
-        List<UserGetDto> GetAll();
+        UserGetDto Add(UserAddDto dto);
+        IEnumerable<UserGetDto> GetAll();
         UserGetDto GetById(int id);
     }
 }

@@ -8,10 +8,11 @@ namespace Chargoon.ContainerManagement.Domain.Services
 {
     public interface IAuthenticationService
     {
-        int? UserId { get; }
+        int UserId { get; }
 
         User GetUser();
         bool HasRole(string role);
         LoginResponse Login(LoginRequest model);
+        LoginResponse Login(int id);
     }
 }

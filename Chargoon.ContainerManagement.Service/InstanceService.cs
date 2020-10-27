@@ -1,7 +1,13 @@
 ﻿using Chargoon.ContainerManagement.Domain.Data.Repositories;
+using Chargoon.ContainerManagement.Domain.DataModels;
+using Chargoon.ContainerManagement.Domain.Dtos.Dockers;
 using Chargoon.ContainerManagement.Domain.Dtos.Instances;
+using Chargoon.ContainerManagement.Domain.Dtos.TemplateCommands;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service.Mappings;
+using Docker.DotNet.Models;
+using Microsoft.Extensions.Caching.Memory;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -13,73 +19,292 @@ namespace Chargoon.ContainerManagement.Service
     {
         private readonly IInstanceRepository instanceRepository;
         private readonly IDockerService dockerService;
+        private readonly IUserRepository userRepository;
+        private readonly IMemoryCache memoryCache;
+        private readonly ITemplateRepository templateRepository;
+        private readonly ITemplateCommandRepository templateCommandRepository;
+        private readonly IAuthenticationService authenticationService;
 
-        public InstanceService(IInstanceRepository instanceRepository, IDockerService dockerService)
+        public InstanceService(
+            IInstanceRepository instanceRepository,
+            IDockerService dockerService,
+            IUserRepository userRepository,
+            IMemoryCache memoryCache,
+            ITemplateRepository templateRepository,
+            ITemplateCommandRepository templateCommandRepository,
+            IAuthenticationService authenticationService
+            )
         {
             this.instanceRepository = instanceRepository;
             this.dockerService = dockerService;
+            this.userRepository = userRepository;
+            this.memoryCache = memoryCache;
+            this.templateRepository = templateRepository;
+            this.templateCommandRepository = templateCommandRepository;
+            this.authenticationService = authenticationService;
         }
 
-        public List<InstanceGetDto> GetByUserId(int id)
+        private string GetTemplateCommandExecsCacheName() => $"TemplateCommand-Execs";
+
+        public IEnumerable<InstanceGetDto> GetByUserId(int id)
         {
             return instanceRepository.GetAllByUserId(id).Select(x => x.ToDto()).ToList();
         }
 
+        private Instance Load(Instance instance)
+        {
+            instance.User = userRepository.Get(instance.UserId);
+            if (instance.TemplateId.HasValue)
+            {
+                instance.Template = templateRepository.Get(instance.TemplateId.Value);
+                if (instance.Template != null)
+                {
+                    instance.Template.Commands = templateCommandRepository.GetAllByTemplateId(instance.TemplateId.Value);
+                }
+            }
+            return instance;
+        }
+
+        public IEnumerable<InstanceGetDto> GetAll()
+        {
+            var instances = instanceRepository.GetAll();
+            foreach (var instance in instances)
+            {
+                Load(instance);
+            }
+            return instances.ToDto();
+        }
+
+        public IEnumerable<InstanceGetDto> GetAllByUserId(int userId)
+        {
+            var instances = instanceRepository.GetAllByUserId(userId);
+            foreach (var instance in instances)
+            {
+                Load(instance);
+            }
+            return instances.ToDto();
+        }
+
+        public InstanceGetDto Get(int id)
+        {
+            var instance = instanceRepository.Get(id);
+            if (instance == null) throw new NullReferenceException(nameof(instance));
+            return instance.ToDto();
+        }
+
+        public IEnumerable<InstanceGetDto> GetAllOwn()
+        {
+            var userId = authenticationService.UserId;
+            return GetAllByUserId(userId);
+        }
+
+        public InstanceGetDto GetOwn(int id)
+        {
+            var userId = authenticationService.UserId;
+            var instance = instanceRepository.Get(id);
+            if (instance == null) throw new NullReferenceException(nameof(instance));
+            if (instance.UserId != userId) throw new Exception("this instance is not yours");
+            return instance.ToDto();
+        }
+
+        public IEnumerable<SwarmService> GetAllOwnService(int id)
+        {
+            var instance = GetOwn(id);
+            return dockerService.GetAllServiceByStackName(instance.GetStackName());
+        }
+
+        public IEnumerable<TemplateCommandExecDto> GetAllOwnCommands(int id)
+        {
+            var result = new List<TemplateCommandExecDto>();
+            if (memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out List<TemplateCommandExecDto> tces))
+            {
+                foreach (var tce in tces.Where(x => x.InstanceId == id).ToList())
+                {
+                    try
+                    {
+                        tce.Inspect = dockerService.GetContainerExecInspect(tce.CommandId);
+                        result.Add(tce);
+                    }
+                    catch
+                    {
+
+                    }
+                }
+            }
+            return result;
+        }
+
         public InstanceGetDto Add(InstanceAddDto dto)
         {
-            var instance = instanceRepository.GetByName(dto.Name);
-            if (instance != null) throw new Exception("Instance Name Exists");
+            var instances = instanceRepository.GetAllByUserId(dto.UserId);
+            if (instances.Any(x => x.Name == dto.Name)) throw new Exception("Instance Name Exists");
+
+            if (instances.Count() > 8) throw new Exception("Max instance count per user is 10");
+
+            instances.OrderBy(x => x.Code);
+
+            var code = 0;
+            for (int i = 0, length = instances.Count(); i < length; i++, code++)
+            {
+                var instance = instances.ElementAt(i);
+                if (instance.Code != i)
+                {
+                    code = i;
+                    break;
+                }
+            }
 
             return instanceRepository.Insert(new Domain.DataModels.Instance()
             {
+                Code = code,
                 UserId = dto.UserId,
                 Name = dto.Name,
             }).ToDto();
         }
 
-        public bool StartContainer(int id)
+        private InstanceGetDto ChangeTemplate(Instance instance, InstanceChangeTemplateDto dto)
         {
-            dockerService.
+            instance.TemplateId = dto.TemplateId;
+            instanceRepository.Update(instance);
+            return instance.ToDto();
         }
 
-        public bool StopContainer(int id)
+        public InstanceGetDto ChangeTemplate(int id, InstanceChangeTemplateDto dto)
         {
-
+            var instance = instanceRepository.Get(id);
+            return ChangeTemplate(instance, dto);
         }
 
-        public bool StartAppPools(int id)
+        public InstanceGetDto ChangeOwnTemplate(int id, InstanceChangeTemplateDto dto)
         {
-
+            var instance = instanceRepository.Get(id);
+            var userId = authenticationService.UserId;
+            if (instance.UserId != userId) throw new Exception("this instance is not yours");
+            return ChangeTemplate(instance, dto);
         }
 
-        public bool StopAppPools(int id)
+        private InstanceGetDto Start(Instance instance)
         {
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
+            var dto = instance.ToDto();
+            if (instance.Template == null) throw new Exception("Instance does not have any template");
+            if (dto.Template.DockerCompose == null) throw new Exception("Docker Compose Failed to Read");
+            var dcJson = instance.Template.DockerCompose;
+            foreach (var item in dto.Environments)
+            {
+                dcJson = dcJson.Replace("{" + item.Key + "}", item.Value);
+            }
 
+            var dc = JsonConvert.DeserializeObject<DockerCompose>(dcJson);
+            foreach (var service in dc.Services)
+            {
+                service.Value.Environment = dto.Environments.Select(x => x.Key + "=" + x.Value);
+            }
+            dockerService.Deploy(instance.User.Username + "_" + instance.Name, dc);
+            return instance.ToDto();
         }
 
-        public bool RestartAppPools(int id)
+        private InstanceGetDto Stop(Instance instance)
         {
-
+            if (instance == null) throw new ArgumentNullException(nameof(instance));
+            dockerService.Undeploy(instance.User.Username, instance.Name);
+            return instance.ToDto();
         }
 
-        public bool RunFileManager(int id)
+        public InstanceGetDto Start(int id)
         {
-
+            var instance = instanceRepository.Get(id);
+            return Start(instance);
         }
 
-        public bool UpdateDatabase(int id)
+        public InstanceGetDto Stop(int id)
         {
-
+            var instance = instanceRepository.Get(id);
+            return Stop(instance);
         }
 
-        public bool ChangeImage(int id, InstanceChangeImageDto dto)
+        public InstanceGetDto StartOwn(int id)
         {
-
+            var instance = instanceRepository.Get(id);
+            var userId = authenticationService.UserId;
+            if (instance.UserId != userId) throw new Exception("this instance is not yours");
+            return Start(instance);
         }
 
-        public bool ChangeType(int id, InstanceChangeTypeDto dto)
+        public InstanceGetDto StopOwn(int id)
         {
+            var instance = instanceRepository.Get(id);
+            var userId = authenticationService.UserId;
+            if (instance.UserId != userId) throw new Exception("this instance is not yours");
+            return Stop(instance);
+        }
 
+        public InstanceGetDto RunOwnCommand(int id, int templateCommandId)
+        {
+            List<TemplateCommandExecDto> tces;
+            memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out tces);
+
+            if (tces != null)
+            {
+                foreach (var templateCommandExecDto in tces.Where(x => x.TemplateCommandId == templateCommandId).ToList())
+                {
+                    var execInspect = dockerService.GetContainerExecInspect(templateCommandExecDto.CommandId);
+                    if (execInspect != null && execInspect.Running) throw new Exception("Command is running inside container");
+                }
+            }
+
+            var userId = authenticationService.UserId;
+            var instance = instanceRepository.Get(id);
+            if (instance == null) throw new NullReferenceException(nameof(instance));
+            if (instance.UserId != userId) throw new Exception("this instance is not yours");
+            if (instance?.Template?.Commands == null) throw new NullReferenceException(nameof(instance.Template.Commands));
+            var tc = instance.Template.Commands.FirstOrDefault(x => x.Id == templateCommandId);
+            if (tc == null) throw new NullReferenceException("Template Command not found");
+
+            var dto = instance.ToDto();
+            var containers = dockerService.GetAllContainer();
+            var stackName = dto.GetStackName();
+            var container = containers.FirstOrDefault(x =>
+            {
+                return x.Names.Any(y =>
+                {
+                    return y.Trim().ToLower().Contains((stackName + "_" + tc.ServiceName).Trim().ToLower());
+                });
+            });
+            if (container == null) throw new NullReferenceException("Container not found");
+
+            var commandId = dockerService.ExecCommandContainer(container.ID, tc.Command);
+
+            var item = new TemplateCommandExecDto()
+            {
+                InstanceId = instance.Id,
+                TemplateId = tc.TemplateId,
+                TemplateCommandId = templateCommandId,
+                CommandId = commandId
+            };
+            if (tces != null)
+            {
+                tces.Add(item);
+            }
+            else
+            {
+                tces = new List<TemplateCommandExecDto> { item };
+            }
+            memoryCache.Set(GetTemplateCommandExecsCacheName(), tces, TimeSpan.FromHours(1));
+            return dto;
+        }
+
+
+        public bool Remove(int id)
+        {
+            var instance = instanceRepository.Get(id);
+            if (instance == null) throw new NullReferenceException(nameof(instance));
+
+            Stop(instance);
+
+            instanceRepository.Delete(instance);
+
+            return true;
         }
     }
 }

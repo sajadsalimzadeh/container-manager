@@ -1,0 +1,80 @@
+.page-instances {
+    display: flex;
+    position: relative;
+    align-items: center;
+    flex-direction: column;
+
+    >.wrapper {
+        width: 80vw !important;
+    }
+
+    .ports {
+        display: flex;
+        flex-wrap: wrap;
+        >* {
+            width: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+
+            @media screen and (max-width: 1600px) {
+                width: 100% !important;
+            }
+        }
+    }
+
+    .commands {
+        display: flex;
+        flex-direction: column;
+
+        >button {
+            border: none;
+            outline: none;
+            display: flex;
+            color: #2080b8;
+            align-items: center;
+            background-color: transparent;
+            animation: fade-in 1s ease;
+
+            >* {
+                margin: 0 5px;
+            }
+            .spinner-border {
+                width: 16px !important;
+                height: 16px !important;
+                border-width: 2px;
+            }
+        }
+    }
+
+    .services {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+
+        >span {
+            width: 12px;
+            height: 12px;
+            margin: 0 3px;
+            border-radius: 50%;
+            background-color: #36304a;
+            transition: all 1s ease;
+            animation: fade-in 1s ease;
+
+            &.running {
+                background-color: #1cac64;
+            }
+
+            &.shutdown {
+                background-color: #df6057;
+            }
+        }
+    }
+
+    .actions {
+        button {
+            margin: 0 5px;
+        }
+    }
+}
