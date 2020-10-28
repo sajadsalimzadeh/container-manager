@@ -9,7 +9,10 @@ namespace Chargoon.ContainerManagement.Domain.Services
     public interface IUserService
     {
         UserGetDto Add(UserAddDto dto);
+        UserGetDto ChangeOwnPassword(UserChangePasswordDto dto);
+        UserGetDto ChangePassword(int id, UserChangePasswordDto dto);
         IEnumerable<UserGetDto> GetAll();
         UserGetDto GetById(int id);
+        UserGetDto GetOwn();
     }
 }

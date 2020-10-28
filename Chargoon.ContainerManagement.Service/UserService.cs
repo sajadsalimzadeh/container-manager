@@ -14,6 +14,7 @@ namespace Chargoon.ContainerManagement.Service
     {
         private readonly IInstanceRepository instanceRepository;
         private readonly IServiceProvider services;
+        private readonly IAuthenticationService authenticationService;
         private readonly IUserRepository userRepository;
         private readonly string teamSpace;
 
@@ -21,10 +22,12 @@ namespace Chargoon.ContainerManagement.Service
             IInstanceRepository instanceRepository,
             IConfiguration configuration,
             IServiceProvider services,
+            IAuthenticationService authenticationService,
             IUserRepository userRepository)
         {
             this.instanceRepository = instanceRepository;
             this.services = services;
+            this.authenticationService = authenticationService;
             this.userRepository = userRepository;
             teamSpace = configuration.GetSection("Volumes").GetSection("TeamSpace").Value;
         }
@@ -42,6 +45,12 @@ namespace Chargoon.ContainerManagement.Service
         public UserGetDto GetById(int id)
         {
             return userRepository.Get(id).ToDto();
+        }
+
+        public UserGetDto GetOwn()
+        {
+            var userId = authenticationService.UserId;
+            return GetById(userId);
         }
 
         public UserGetDto Add(UserAddDto dto)
@@ -65,6 +74,24 @@ namespace Chargoon.ContainerManagement.Service
             user.Instances = instances;
 
             return user;
+        }
+
+        public UserGetDto ChangePassword(int id, UserChangePasswordDto dto)
+        {
+            var user = userRepository.Get(id);
+            if (user.Password != dto.CurrentPassword) throw new Exception("Current Password is not valid");
+
+            user.Password = dto.newPassword;
+
+            user = userRepository.Update(user);
+
+            return user.ToDto();
+        }
+
+        public UserGetDto ChangeOwnPassword(UserChangePasswordDto dto)
+        {
+            var userId = authenticationService.UserId;
+            return ChangePassword(userId, dto);
         }
     }
 }

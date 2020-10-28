@@ -12,5 +12,6 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
         public IEnumerable<string> Environment { get; set; }
         public IEnumerable<DockerComposeServicePort> Ports { get; set; }
         public Dictionary<string, DockerComposeServiceNetwork> Networks { get; set; }
+        public IEnumerable<string> Depends_On { get; set; }
     }
 }

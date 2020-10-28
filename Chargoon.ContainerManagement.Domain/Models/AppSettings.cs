@@ -3,7 +3,6 @@ namespace Chargoon.ContainerManagement.Domain.Models
     public class AppSettings
     {
         public AppSettingsDocker Docker { get; set; }
-        public AppSettingsVolumes Volumes { get; set; }
         public AppSettingsIdentity Identity { get; set; }
         public AppSettingsHangfire Hangfire { get; set; }
         public AppSettingsLogging Logging { get; set; }
@@ -16,11 +15,13 @@ namespace Chargoon.ContainerManagement.Domain.Models
         public int ContainerCacheTimeout { get; set; } = 10; //Seconds
         public int ServiceCacheTimeout { get; set; } = 10; //Seconds
         public int NodeCacheTimeout { get; set; } = 10; //Seconds
+        public string Repository { get; set; }
     }
 
-    public class AppSettingsVolumes
+    public class AppSettingsDidgah
     {
-        public string TeamSpace { get; set; }
+        public string DevelopmentPackPath { get; set; }
+        public string BuildLogPath { get; set; }
     }
 
     public class AppSettingsHangfire
@@ -28,6 +29,7 @@ namespace Chargoon.ContainerManagement.Domain.Models
         public string DockerSystemPruneCron { get; set; } = "*/10 * * * *";
         public string DockerClearExitedCommandCacheCron { get; set; } = "1 * * * *";
         public string ClearLogCron { get; set; } = "1 * * * *";
+        public string DidgahBuildCron { get; set; } = "0 5 * * *";
     }
 
     public class AppSettingsIdentity

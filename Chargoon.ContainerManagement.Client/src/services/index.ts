@@ -12,7 +12,11 @@ import {
   TemplateCommandExecDto,
   InstanceSignalDto,
   UserAddDto,
-  InstanceAddDto
+  InstanceAddDto,
+  UserChangePasswordDto,
+  BranchGetDto,
+  BranchAddDto,
+  BranchChangeDto
 } from "../models";
 import Cookies from 'js-cookie';
 
@@ -83,4 +87,12 @@ export function Instance_Remove(id: number) { return axios.delete<OperationResul
 export function Template_GetAll() { return axios.get<OperationResult<TemplateGetDto[]>>(`Templates`); }
 
 export function User_GetAll() { return axios.get<OperationResult<UserGetDto[]>>(`Users`); }
+export function User_GetOwn() { return axios.get<OperationResult<UserGetDto>>(`Users/Own`); }
+export function User_ChangePassword(id: number, dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/${id}/ChangePassword`, dto); }
+export function User_ChangeOwnPassword(dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/Own/ChangePassword`, dto); }
 export function User_Add(dto: UserAddDto) { return axios.post<OperationResult<UserGetDto>>(`Users`, dto); }
+
+export function Branch_GetAll() { return axios.get<OperationResult<BranchGetDto[]>>(`Branches`); }
+export function Branch_Get(id: number) { return axios.get<OperationResult<BranchGetDto>>(`Branches/${id}`); }
+export function Branch_Add(dto: BranchAddDto) { return axios.post<OperationResult<BranchGetDto>>(`Branches`, dto); }
+export function Branch_Change(id: number, dto: BranchChangeDto) { return axios.patch<OperationResult<BranchGetDto>>(`Branches/${id}`, dto); }

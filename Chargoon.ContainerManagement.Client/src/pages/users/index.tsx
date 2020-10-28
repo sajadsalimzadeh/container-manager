@@ -1,12 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Button, Col, Form, Input, Modal, Row, Select } from 'antd';
 import { RouteComponentProps, useHistory } from "react-router";
-import { useForm } from 'antd/lib/form/Form';
 import { store as notify } from 'react-notifications-component';
+import { notificationOptions } from '../../notification';
 import { Loading } from '../../components/loading';
 import { InstanceGetDto, UserGetDto } from '../../models';
 import { Auth_ChangeUser, Auth_SetLoginInfo, Instance_Add, Instance_Remove, User_Add, User_GetAll } from '../../services';
-import { notificationOptions } from '../../notification';
 import useForceUpdate from 'use-force-update';
 
 declare type Modals = '' | 'add-user' | 'add-instance';
@@ -122,6 +121,7 @@ export default (props: Props) => {
                     <col width="150px" />
                     <col width="170px" />
                     <col width="" />
+                    <col width="250px" />
                 </colgroup>
                 <thead>
                     <tr className="table-head">
@@ -139,7 +139,7 @@ export default (props: Props) => {
                         <td>{user.roles.join(',')}</td>
                         <td>
                             <div className="instances">
-                                {user.instances.map(instance => <div>
+                                {user.instances.map(instance => <div key={instance.id}>
                                     <span className="badge badge-dark">name: {instance.name}</span>
                                     <span className="badge badge-dark">port: {instance.environments.BASE_PORT}**</span>
                                     <button className="btn badge badge-primary" onClick={() => showEnvironments(instance)}>Environments</button>

@@ -16,9 +16,9 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
     {
         private readonly IDockerService dockerService;
 
-        public DockersController(IDockerService imageService)
+        public DockersController(IDockerService dockerService)
         {
-            this.dockerService = imageService;
+            this.dockerService = dockerService;
         }
 
         [HttpGet("Images"), Log]

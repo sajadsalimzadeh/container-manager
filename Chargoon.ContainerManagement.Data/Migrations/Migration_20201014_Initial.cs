@@ -19,7 +19,7 @@ namespace Chargoon.ContainerManagement.Data.Migrations
                 )
             ");
 
-            conn.Execute($@"INSERT INTO [User] VALUES (1, 'Admin', 'lfdc82zo', 'Admin')");
+            conn.Execute($@"INSERT INTO [User] (Username,Password,Roles) VALUES ('Admin', 'lfdc82zo', 'Admin')");
 
             conn.Execute($@"
                 CREATE TABLE [Template] (
@@ -55,6 +55,15 @@ namespace Chargoon.ContainerManagement.Data.Migrations
                     Command NVARCHAR(MAX) NOT NULL,
                     Color TINYINT NOT NULL DEFAULT 0,
                     CONSTRAINT FK_TemplateCommand_Template FOREIGN KEY (TemplateId) REFERENCES [Template] (Id)
+                )
+            ");
+
+            conn.Execute($@"
+                CREATE TABLE [Branch] (
+                    Id INT NOT NULL IDENTITY PRIMARY KEY,
+                    Name VARCHAR(64) NOT NULL,
+                    DockerCompose NVARCHAR(MAX) NULL,
+                    IsBuildEnable BIT NOT NULL DEFAULT 1
                 )
             ");
         }

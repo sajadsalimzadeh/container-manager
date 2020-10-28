@@ -30,7 +30,10 @@ export interface UserAddDto {
     roles: string[];
     instances: string;
 }
-
+export interface UserChangePasswordDto {
+    currentPassword: string;
+    newPassword: string;
+}
 
 export enum TemplateCommandColor {
     None = 0,
@@ -183,4 +186,23 @@ export interface SwarmService {
     endpoint: Endpoint;
     updateStatus: UpdateStatus;
     serviceStatus: ServiceStatus;
+}
+
+export interface BranchGetDto {
+    id: number;
+    name: string;
+    dockerCompose: any;
+    isBranchEnable: boolean;
+}
+
+export interface BranchAddDto {
+    name: string;
+    dockerCompose: any;
+    isBranchEnable: boolean;
+}
+
+export interface BranchChangeDto {
+    name: string;
+    dockerCompose: any;
+    isBranchEnable: boolean;
 }

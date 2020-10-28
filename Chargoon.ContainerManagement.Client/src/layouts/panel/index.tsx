@@ -13,10 +13,10 @@ export default withRouter((props: Props) => {
     const hasRole = (value: string) => Auth_HasRole(value);
 
     return <div className="layout-panel">
-        <nav className="navbar navbar-expand-lg navbar-light bg-light">
-            <a className="navbar-brand" href="#">
+        <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
+            <div className="navbar-brand">
                 <img src="assets/images/logo.png" />
-            </a>
+            </div>
             <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText"
                 aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
                 <span className="navbar-toggler-icon"></span>
@@ -24,20 +24,38 @@ export default withRouter((props: Props) => {
             <div className="collapse navbar-collapse" id="navbarText">
                 <ul className="navbar-nav mr-auto">
                     <li className="nav-item">
-                        <Link to="/profile" className="nav-link">{username}</Link>
+                        <Link to="/profile" className="nav-link">
+                            <i className="fa fa-user"></i>
+                            <span>{username}</span>
+                        </Link>
                     </li>
                     {hasRole('user') ? <li className="nav-item">
-                        <Link to="/instances" className="nav-link">Instances</Link>
+                        <Link to="/instances" className="nav-link">
+                            <i className="fa fa-plug"></i>
+                            <span>Instances</span>
+                        </Link>
+                    </li> : null}
+                    {hasRole('user') ? <li className="nav-item">
+                        <Link to="/branches" className="nav-link">
+                            <i className="fa fa-code-fork"></i>
+                            <span>Branches</span>
+                        </Link>
                     </li> : null}
                     {hasRole('admin') ? <li className="nav-item">
-                        <Link to="/users" className="nav-link">Users</Link>
+                        <Link to="/users" className="nav-link">
+                            <i className="fa fa-users"></i>
+                            <span>Users</span>
+                        </Link>
                     </li> : null}
-                    <li className="nav-item">
-                        <Link to="/" className="nav-link">Logout</Link>
-                    </li>
                 </ul>
                 <span className="navbar-text">
                 </span>
+            </div>
+            <div>
+                <Link to="/" className="btn btn-danger my-2 my-sm-0">
+                    <span>Logout</span>
+                    <i className="fa fa-sign-out"></i>
+                </Link>
             </div>
         </nav>
         <main>

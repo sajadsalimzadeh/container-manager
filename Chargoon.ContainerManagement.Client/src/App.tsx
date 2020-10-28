@@ -24,6 +24,7 @@ function App() {
                 <Switch>
                   <Route path="/instances" component={lazy(() => import('./pages/instances'))} />
                   <Route path="/users" component={lazy(() => import('./pages/users'))} />
+                  <Route path="/branches" component={lazy(() => import('./pages/branches'))} />
                   <Route path="/profile" component={lazy(() => import('./pages/profile'))} />
                 </Switch>
               </Suspense>

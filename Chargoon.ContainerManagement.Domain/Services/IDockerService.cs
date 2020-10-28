@@ -37,5 +37,6 @@ namespace Chargoon.ContainerManagement.Domain.Services
         ContainerExecInspectResponse GetContainerExecInspect(string id);
         string GetExecCommandContainerLog(string id);
         void ClearExitedCommands();
+        void Build(DockerCompose dc);
     }
 }

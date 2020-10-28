@@ -1,0 +1,24 @@
+.page-profile {
+    display: flex;
+    align-items: flex-start;
+    justify-content: center;
+    padding-top: 60px;
+
+    >.card {
+        width: 400px;
+        min-height: 300px;
+
+        .avatar-box {
+            padding: 0 20px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+
+            .avatar {
+                width: 250px;
+                height: 250px;
+                border-radius: 50%;
+            }
+        }
+    }
+}

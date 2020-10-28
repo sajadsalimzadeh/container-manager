@@ -27,10 +27,16 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
             this.instanceService = instanceService;
         }
 
-        [HttpGet, Auth]
+        [HttpGet, Auth("Admin")]
         public OperationResult<IEnumerable<UserGetDto>> GetAll()
         {
             return new OperationResult<IEnumerable<UserGetDto>>(userService.GetAll());
+        }
+
+        [HttpGet("Own"), Auth]
+        public OperationResult<UserGetDto> GetOwn()
+        {
+            return new OperationResult<UserGetDto>(userService.GetOwn());
         }
 
         [HttpGet("{id:int}/Instances"), Auth("Admin"), Log]
@@ -43,6 +49,18 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
         public OperationResult<UserGetDto> Add([FromBody] UserAddDto dto)
         {
             return new OperationResult<UserGetDto>(userService.Add(dto));
+        }
+
+        [HttpPatch("{id:int}/ChangePassword"), Auth("Admin"), Log]
+        public OperationResult<UserGetDto> ChangePassword(int id, [FromBody] UserChangePasswordDto dto)
+        {
+            return new OperationResult<UserGetDto>(userService.ChangePassword(id, dto));
+        }
+
+        [HttpPatch("Own/ChangePassword"), Auth, Log]
+        public OperationResult<UserGetDto> ChangeOwnPassword([FromBody] UserChangePasswordDto dto)
+        {
+            return new OperationResult<UserGetDto>(userService.ChangeOwnPassword(dto));
         }
     }
 }

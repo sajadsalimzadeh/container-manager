@@ -1,5 +1,4 @@
 ﻿using Chargoon.ContainerManagement.Domain.Dtos.Dockers;
-using Chargoon.ContainerManagement.Domain.Dtos.Instances;
 using Chargoon.ContainerManagement.Domain.Models;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service.Utilities;
@@ -13,8 +12,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Text;
-using System.Threading;
 using System.Threading.Tasks;
 
 namespace Chargoon.ContainerManagement.Service
@@ -338,7 +335,7 @@ namespace Chargoon.ContainerManagement.Service
             ExecuteCommand($"docker system prune -f");
         }
 
-        public void Deploy(string stackName, DockerCompose dc)
+        private string CreateDockerComposeFile(DockerCompose dc)
         {
             var dirPath = Path.Combine(Path.GetTempPath(), "ContainerManagement");
             var dockerComposeFilePath = Path.Combine(dirPath, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-fff") + ".yml");
@@ -347,6 +344,19 @@ namespace Chargoon.ContainerManagement.Service
 
             var yamlHelper = new YamlHelper(dc);
             File.WriteAllText(dockerComposeFilePath, yamlHelper.ToYaml());
+
+            return dockerComposeFilePath;
+        }
+
+        public void Build(DockerCompose dc)
+        {
+            var dockerComposeFilePath = CreateDockerComposeFile(dc);
+            ExecuteCommand($"docker-compose build \"{dockerComposeFilePath}\"");
+        }
+
+        public void Deploy(string stackName, DockerCompose dc)
+        {
+            var dockerComposeFilePath = CreateDockerComposeFile(dc);
             ExecuteCommand($"docker stack deploy -c \"{dockerComposeFilePath}\" {stackName}");
         }
 
