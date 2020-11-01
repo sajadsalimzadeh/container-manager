@@ -2,12 +2,15 @@
 using Chargoon.ContainerManagement.Domain.Services;
 using Hangfire;
 using Hangfire.SqlServer;
+using Hangfire.Storage;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Options;
 using Serilog;
 using System;
+using System.Collections.Generic;
+using System.Linq;
 
 namespace Chargoon.ContainerManagement.WebApi.Helper
 {
@@ -19,8 +22,8 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 
         public static void AddHangfire(this IServiceCollection services)
         {
-            configuration = services.BuildServiceProvider().GetService<IConfiguration>();
-            appSettings = services.BuildServiceProvider().GetService<IOptions<AppSettings>>().Value;
+            var provider = services.BuildServiceProvider();
+            configuration = provider.GetService<IConfiguration>();
 
             services.AddHangfire(c =>
             {
@@ -35,10 +38,6 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
                         UseRecommendedIsolationLevel = true,
                         DisableGlobalLocks = true
                     });
-
-                RecurringJob.AddOrUpdate(() => DockerSystemPrune(), appSettings.Hangfire.DockerSystemPruneCron);
-                RecurringJob.AddOrUpdate(() => DockerClearExitedCommandCache(), appSettings.Hangfire.DockerClearExitedCommandCacheCron);
-                RecurringJob.AddOrUpdate(() => ClearLogs(), appSettings.Hangfire.ClearLogCron);
             });
 
             // Add the processing server as IHostedService
@@ -50,6 +49,75 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
         public static void UseHangfire(this IApplicationBuilder app)
         {
             app.UseHangfireDashboard();
+
+            appSettings = app.ApplicationServices.GetService<IOptions<AppSettings>>().Value;
+            var imageService = app.ApplicationServices.GetService<IImageService>();
+            var templateService = app.ApplicationServices.GetService<ITemplateService>();
+            var logger = app.ApplicationServices.GetService<ILoggerService>();
+
+            var existsRecurringJobIds = new List<string>()
+            {
+                "DockerSystemPrune",
+                "DockerClearExitedCommandCache",
+                "ClearLogs"
+            };
+
+            RecurringJob.AddOrUpdate("DockerSystemPrune", () => DockerSystemPrune(), appSettings.Hangfire.DockerSystemPruneCron);
+            RecurringJob.AddOrUpdate("DockerClearExitedCommandCache", () => DockerClearExitedCommandCache(), appSettings.Hangfire.DockerClearExitedCommandCacheCron);
+            RecurringJob.AddOrUpdate("ClearLogs", () => ClearLogs(), appSettings.Hangfire.ClearLogCron);
+
+            foreach (var image in imageService.GetAll())
+            {
+                var scheduleId = $"ImageBuild-{image.Id}-{image.Name}";
+                if (!string.IsNullOrEmpty(image.BuildCron))
+                {
+                    try
+                    {
+                        RecurringJob.AddOrUpdate(scheduleId, () => BuildImage(image.Id), image.BuildCron);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex);
+                    }
+                }
+                else
+                {
+                    RecurringJob.RemoveIfExists(scheduleId);
+                }
+                existsRecurringJobIds.Add(scheduleId);
+            }
+
+
+            foreach (var template in templateService.GetAll())
+            {
+                var scheduleId = $"TtemplateInsert-{template.Id}-{template.Name}";
+                if (!string.IsNullOrEmpty(template.InsertCron))
+                {
+                    try
+                    {
+                        RecurringJob.AddOrUpdate(scheduleId, () => InsertTemplate(template.Id), template.InsertCron);
+                    }
+                    catch (Exception ex)
+                    {
+                        logger.LogError(ex);
+                    }
+                }
+                else
+                {
+                    RecurringJob.RemoveIfExists(scheduleId);
+                }
+                existsRecurringJobIds.Add(scheduleId);
+            }
+
+            using (var connection = JobStorage.Current.GetConnection())
+            {
+                var recurringJobs = connection.GetRecurringJobs();
+                var notExistsRecurringJobs = recurringJobs.Where(x => !existsRecurringJobIds.Contains(x.Id)).ToList();
+                foreach (var recuringJob in notExistsRecurringJobs)
+                {
+                    RecurringJob.RemoveIfExists(recuringJob.Id);
+                }
+            }
         }
 
         public static void DockerSystemPrune()
@@ -93,6 +161,47 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
                 logger.LogInformation($"Hangfire: {nameof(ClearLogs)} Start");
                 logger.ClearBefore(datetime);
                 logger.LogInformation($"Hangfire: {nameof(ClearLogs)} End");
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex);
+            }
+        }
+
+        public static void BuildImage(int imageId)
+        {
+            var logger = services.BuildServiceProvider().GetService<ILoggerService>();
+            try
+            {
+                var imageService = services.BuildServiceProvider().GetService<IImageService>();
+                var image = imageService.Get(imageId);
+                if (image != null)
+                {
+                    logger.LogInformation($"Hangfire: {nameof(BuildImage)} Start");
+                    imageService.Build(imageId);
+                    logger.LogInformation($"Hangfire: {nameof(BuildImage)} End");
+                }
+                else
+                {
+                    logger.LogInformation($"Hangfire: image not found");
+
+                }
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex);
+            }
+        }
+
+        public static void InsertTemplate(int templateId)
+        {
+            var logger = services.BuildServiceProvider().GetService<ILoggerService>();
+            try
+            {
+                var templateService = services.BuildServiceProvider().GetService<ITemplateService>();
+                logger.LogInformation($"Hangfire: {nameof(InsertTemplate)} Start");
+                templateService.DupplicateFrom(templateId);
+                logger.LogInformation($"Hangfire: {nameof(InsertTemplate)} End");
             }
             catch (Exception ex)
             {

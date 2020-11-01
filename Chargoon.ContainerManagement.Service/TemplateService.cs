@@ -1,5 +1,6 @@
 ﻿using Chargoon.ContainerManagement.Domain.Data.Repositories;
 using Chargoon.ContainerManagement.Domain.DataModels;
+using Chargoon.ContainerManagement.Domain.Dtos.Dockers;
 using Chargoon.ContainerManagement.Domain.Dtos.Instances;
 using Chargoon.ContainerManagement.Domain.Dtos.Templates;
 using Chargoon.ContainerManagement.Domain.Services;
@@ -8,16 +9,40 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Chargoon.ContainerManagement.Service
 {
     public class TemplateService : ITemplateService
     {
         private readonly ITemplateRepository templateRepository;
+        private readonly ITemplateCommandRepository templateCommandRepository;
 
-        public TemplateService(ITemplateRepository templateRepository)
+        public TemplateService(
+            ITemplateRepository templateRepository,
+            ITemplateCommandRepository templateCommandRepository)
         {
             this.templateRepository = templateRepository;
+            this.templateCommandRepository = templateCommandRepository;
+        }
+
+        private void ValidateDockerCompose(string dockerCompose)
+        {
+            if (string.IsNullOrEmpty(dockerCompose)) throw new Exception("docker compose can not be null");
+            var deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            deserializer.Deserialize<DockerCompose>(dockerCompose);
+        }
+
+        private string ReplaceTime(string input)
+        {
+            input = input.Replace("{yyyy}", DateTime.Now.ToString("yyyy"));
+            input = input.Replace("{MM}", DateTime.Now.ToString("MM"));
+            input = input.Replace("{dd}", DateTime.Now.ToString("dd"));
+            input = input.Replace("{HH}", DateTime.Now.ToString("HH"));
+            input = input.Replace("{mm}", DateTime.Now.ToString("mm"));
+            input = input.Replace("{ss}", DateTime.Now.ToString("ss"));
+            return input;
         }
 
         public IEnumerable<TemplateGetDto> GetAll()
@@ -25,16 +50,55 @@ namespace Chargoon.ContainerManagement.Service
             return templateRepository.GetAll().ToDto();
         }
 
+        public TemplateGetDto Get(int id)
+        {
+            return templateRepository.Get(id).ToDto();
+        }
+
         public TemplateGetDto Add(TemplateAddDto dto)
         {
-            var template = templateRepository.Insert(dto.ToDataModel());
+            var model = dto.ToDataModel();
+            ValidateDockerCompose(model.DockerCompose);
+            return templateRepository.Insert(model).ToDto();
+        }
+
+        public TemplateGetDto DupplicateFrom(int templateId)
+        {
+            var template = templateRepository.Get(templateId);
+            if (template == null) throw new Exception("Template not found");
+            template.IsActive = true;
+            template.InsertCron = null;
+            template.Name = ReplaceTime(template.Name);
+            template.DockerCompose = ReplaceTime(template.DockerCompose);
+            template = templateRepository.Insert(template);
+            var commands = new List<TemplateCommand>();
+            foreach (var templateCommand in templateCommandRepository.GetAllByTemplateId(templateId))
+            {
+                templateCommand.TemplateId = template.Id;
+                templateCommandRepository.Insert(templateCommand);
+                commands.Add(templateCommand);
+            }
+            template.Commands = commands;
             return template.ToDto();
         }
 
-        public TemplateGetDto Change(TemplateChangeDto dto)
+        public TemplateGetDto Change(int id, TemplateChangeDto dto)
         {
-            var template = templateRepository.Update(dto.ToDataModel());
-            return template.ToDto();
+            var model = templateRepository.Get(id);
+            if (model == null) throw new NullReferenceException("Template not found");
+            model.ToDataModel(dto);
+            model.Id = id;
+            ValidateDockerCompose(model.DockerCompose);
+            return templateRepository.Update(model).ToDto();
+        }
+
+        public TemplateGetDto Remove(int id)
+        {
+            foreach (var command in templateCommandRepository.GetAllByTemplateId(id))
+            {
+                templateCommandRepository.Delete(command.Id);
+            }
+            return templateRepository.Delete(id).ToDto();
         }
     }
 }

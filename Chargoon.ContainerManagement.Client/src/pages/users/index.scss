@@ -11,13 +11,11 @@
     .instances {
         display: flex;
         align-items: center;
+        flex-direction: column;
         justify-content: center;
 
         >* {
-            padding: 0 10px;
-            &:not(:last-child) {
-                border-right: 1px solid #ccc;
-            }
+            padding: 3px 5px;
         }
 
         .badge {

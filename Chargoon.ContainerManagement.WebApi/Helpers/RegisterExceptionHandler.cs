@@ -11,7 +11,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 {
     public static class RegisterExceptionHandler
     {
-        public static IApplicationBuilder UseExceptionHandler(this IApplicationBuilder app)
+        public static IApplicationBuilder UseCustomExceptionHandler(this IApplicationBuilder app)
         {
             app.UseExceptionHandler(errorApp =>
             {

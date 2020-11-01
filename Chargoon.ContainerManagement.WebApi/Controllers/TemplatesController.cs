@@ -33,8 +33,19 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
         [HttpPatch("{id:int}"), Auth("Admin")]
         public OperationResult<TemplateGetDto> Change(int id, [FromBody] TemplateChangeDto dto)
         {
-            dto.Id = id;
-            return new OperationResult<TemplateGetDto>(templateService.Change(dto));
+            return new OperationResult<TemplateGetDto>(templateService.Change(id, dto));
+        }
+
+        [HttpPut("{id:int}/Dupplicate"), Auth("Admin")]
+        public OperationResult<TemplateGetDto> Dupplicate(int id)
+        {
+            return new OperationResult<TemplateGetDto>(templateService.DupplicateFrom(id));
+        }
+
+        [HttpDelete("{id:int}"), Auth("Admin")]
+        public OperationResult<TemplateGetDto> Remove(int id)
+        {
+            return new OperationResult<TemplateGetDto>(templateService.Remove(id));
         }
     }
 }

@@ -6,13 +6,13 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Domain.DataModels
 {
-    [Table(nameof(Branch))]
-    public class Branch
+    [Table(nameof(Image))]
+    public class Image
     {
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public string Name { get; set; }
-        public string DockerCompose { get; set; }
-        public bool IsBuildEnable { get; set; }
+        public string BuildCron { get; set; }
+        public string BuildPath { get; set; }
     }
 }

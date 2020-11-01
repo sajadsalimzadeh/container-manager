@@ -1,4 +1,4 @@
-import Axios from "axios";
+import Axios, { AxiosInstance } from "axios";
 import {
   OperationResult,
   LoginRequestDto,
@@ -7,47 +7,61 @@ import {
   SwarmService,
   InstanceChangeTemplateDto,
   TemplateGetDto,
+  TemplateAddDto,
+  TemplateChangeDto,
   UserGetDto,
+  UserAddDto,
+  UserChangePasswordDto,
+  UserResetPasswordDto,
   InstanceRunCommandDto,
   TemplateCommandExecDto,
   InstanceSignalDto,
-  UserAddDto,
   InstanceAddDto,
-  UserChangePasswordDto,
-  BranchGetDto,
-  BranchAddDto,
-  BranchChangeDto
+  ImageGetDto,
+  ImageAddDto,
+  ImageChangeDto,
+  ImageBuildLogDto
 } from "../models";
 import Cookies from 'js-cookie';
 
-var axios = Axios.create({
-  baseURL: 'http://localhost:57019/api',
-});
+var config: any;
+var axios: AxiosInstance;
 
-axios.interceptors.request.use(config => {
-  if (!config.headers) config.headers = {};
-  config.headers.Authorization = Cookies.get('token');
-  return config;
-});
+export function Init(configUrl: string) {
+  return new Promise((resolve, reject) => {
+    Axios.get(configUrl).then(res => {
+      config = res.data;
+      axios = Axios.create({
+        baseURL: config.baseURL,
+      });
 
-axios.interceptors.response.use(response => {
-  return {
-    ...response,
-    data: { ...response?.data }
-  };
-}, error => {
-  if (error?.response?.status === 401) {
-    window.location.hash = '/';
-  }
-  return {
-    ...error?.response,
-    data: {
-      success: false,
-      ...error?.response?.data
-    }
-  };
-});
+      axios.interceptors.request.use(config => {
+        if (!config.headers) config.headers = {};
+        config.headers.Authorization = Cookies.get('token');
+        return config;
+      });
 
+      axios.interceptors.response.use(response => {
+        return {
+          ...response,
+          data: { ...response?.data }
+        };
+      }, error => {
+        if (error?.response?.status === 401) {
+          window.location.hash = '/';
+        }
+        return {
+          ...error?.response,
+          data: {
+            success: false,
+            ...error?.response?.data
+          }
+        };
+      });
+      resolve(config);
+    }).catch(err => reject(err));
+  });
+}
 
 export function Auth_Login(dto: LoginRequestDto) { return axios.post<OperationResult<LoginResponseDto>>(`Auth/Login`, dto); }
 export function Auth_ChangeUser(id: number) { return axios.post<OperationResult<LoginResponseDto>>(`Auth/ChangeUser/${id}`); }
@@ -84,15 +98,24 @@ export function Instance_StopOwn(id: number) { return axios.put<OperationResult<
 export function Instance_RunCommand(id: number, commandId: number, dto?: InstanceRunCommandDto) { return axios.put<OperationResult<InstanceGetDto>>(`Instances/Own/${id}/RunCommand/${commandId}`, dto); }
 export function Instance_Remove(id: number) { return axios.delete<OperationResult<InstanceGetDto>>(`Instances/${id}`); }
 
-export function Template_GetAll() { return axios.get<OperationResult<TemplateGetDto[]>>(`Templates`); }
-
 export function User_GetAll() { return axios.get<OperationResult<UserGetDto[]>>(`Users`); }
 export function User_GetOwn() { return axios.get<OperationResult<UserGetDto>>(`Users/Own`); }
 export function User_ChangePassword(id: number, dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/${id}/ChangePassword`, dto); }
 export function User_ChangeOwnPassword(dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/Own/ChangePassword`, dto); }
 export function User_Add(dto: UserAddDto) { return axios.post<OperationResult<UserGetDto>>(`Users`, dto); }
+export function User_ResetPassword(id: number, dto: UserResetPasswordDto) { return axios.post<OperationResult<UserGetDto>>(`Users/${id}`, dto); }
 
-export function Branch_GetAll() { return axios.get<OperationResult<BranchGetDto[]>>(`Branches`); }
-export function Branch_Get(id: number) { return axios.get<OperationResult<BranchGetDto>>(`Branches/${id}`); }
-export function Branch_Add(dto: BranchAddDto) { return axios.post<OperationResult<BranchGetDto>>(`Branches`, dto); }
-export function Branch_Change(id: number, dto: BranchChangeDto) { return axios.patch<OperationResult<BranchGetDto>>(`Branches/${id}`, dto); }
+export function Image_GetAll() { return axios.get<OperationResult<ImageGetDto[]>>(`Images`); }
+export function Image_Get(id: number) { return axios.get<OperationResult<ImageGetDto>>(`Images/${id}`); }
+export function Image_Add(dto: ImageAddDto) { return axios.post<OperationResult<ImageGetDto>>(`Images`, dto); }
+export function Image_Change(id: number, dto: ImageChangeDto) { return axios.patch<OperationResult<ImageGetDto>>(`Images/${id}`, dto); }
+export function Image_Remove(id: number) { return axios.delete<OperationResult<ImageGetDto>>(`Images/${id}`); }
+export function Image_GetAllBuildLogs(id: number) { return axios.get<OperationResult<ImageBuildLogDto[]>>(`Images/${id}/BuildLogs`); }
+export function Image_GetBuildLogLink(id: number, buildname: string, filename: string) { return `${config.baseURL}/Images/${id}/BuildLogs/${buildname}/${filename}`; }
+
+export function Template_GetAll() { return axios.get<OperationResult<TemplateGetDto[]>>(`Templates`); }
+export function Template_Get(id: number) { return axios.get<OperationResult<TemplateGetDto>>(`Templates/${id}`); }
+export function Template_Add(dto: TemplateAddDto) { return axios.post<OperationResult<TemplateGetDto>>(`Templates`, dto); }
+export function Template_Dupplicate(id: number) { return axios.put<OperationResult<TemplateGetDto>>(`Templates/${id}/Dupplicate`, {}); }
+export function Template_Change(id: number, dto: TemplateChangeDto) { return axios.patch<OperationResult<TemplateGetDto>>(`Templates/${id}`, dto); }
+export function Template_Remove(id: number) { return axios.delete<OperationResult<TemplateGetDto>>(`Templates/${id}`); }

@@ -12,6 +12,8 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Chargoon.ContainerManagement.Service
 {
@@ -110,7 +112,13 @@ namespace Chargoon.ContainerManagement.Service
         public IEnumerable<SwarmService> GetAllOwnService(int id)
         {
             var instance = GetOwn(id);
-            return dockerService.GetAllServiceByStackName(instance.GetStackName());
+            return dockerService.GetAllServiceByPrefix(instance.GetStackName());
+        }
+
+        public IEnumerable<ContainerListResponse> GetAllOwnContainer(int id)
+        {
+            var instance = GetOwn(id);
+            return dockerService.GetAllContainerByPrefix(instance.GetStackName());
         }
 
         public IEnumerable<TemplateCommandExecDto> GetAllOwnCommands(int id)
@@ -189,18 +197,12 @@ namespace Chargoon.ContainerManagement.Service
             var dto = instance.ToDto();
             if (instance.Template == null) throw new Exception("Instance does not have any template");
             if (dto.Template.DockerCompose == null) throw new Exception("Docker Compose Failed to Read");
-            var dcJson = instance.Template.DockerCompose;
+            var dockerCompose = instance.Template.DockerCompose;
             foreach (var item in dto.Environments)
             {
-                dcJson = dcJson.Replace("{" + item.Key + "}", item.Value);
+                dockerCompose = dockerCompose.Replace("{" + item.Key + "}", item.Value);
             }
-
-            var dc = JsonConvert.DeserializeObject<DockerCompose>(dcJson);
-            foreach (var service in dc.Services)
-            {
-                service.Value.Environment = dto.Environments.Select(x => x.Key + "=" + x.Value);
-            }
-            dockerService.Deploy(instance.User.Username + "_" + instance.Name, dc);
+            dockerService.Deploy(instance.User.Username + "_" + instance.Name, dockerCompose);
             return instance.ToDto();
         }
 

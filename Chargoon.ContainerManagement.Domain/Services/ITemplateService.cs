@@ -9,7 +9,10 @@ namespace Chargoon.ContainerManagement.Domain.Services
     public interface ITemplateService
     {
         TemplateGetDto Add(TemplateAddDto dto);
-        TemplateGetDto Change(TemplateChangeDto dto);
+        TemplateGetDto DupplicateFrom(int templateId);
+        TemplateGetDto Change(int id, TemplateChangeDto dto);
+        TemplateGetDto Get(int id);
         IEnumerable<TemplateGetDto> GetAll();
+        TemplateGetDto Remove(int id);
     }
 }

@@ -13,6 +13,8 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
+using YamlDotNet.Serialization.NamingConventions;
 
 namespace Chargoon.ContainerManagement.Service
 {
@@ -86,6 +88,18 @@ namespace Chargoon.ContainerManagement.Service
             return result;
         }
 
+        public IEnumerable<ContainerListResponse> GetAllContainerByPrefix(string prefix)
+        {
+            var containers = GetAllContainer();
+            foreach (var container in containers)
+            {
+                if (container.Names.Any(x => x.IndexOf(prefix) > -1 && x.IndexOf(prefix) < 3))
+                {
+                    yield return container;
+                }
+            }
+        }
+
         public IEnumerable<SwarmService> GetAllService()
         {
             if (!memoryCache.TryGetValue(nameof(GetAllService), out IEnumerable<SwarmService> result))
@@ -96,12 +110,12 @@ namespace Chargoon.ContainerManagement.Service
             return result;
         }
 
-        public IEnumerable<SwarmService> GetAllServiceByStackName(string stackName)
+        public IEnumerable<SwarmService> GetAllServiceByPrefix(string prefix)
         {
             var services = GetAllService();
             foreach (var service in services)
             {
-                if (service.Spec.Name.StartsWith(stackName))
+                if (service.Spec.Name.StartsWith(prefix))
                 {
                     yield return service;
                 }
@@ -271,7 +285,7 @@ namespace Chargoon.ContainerManagement.Service
                 if (memoryCache.TryGetValue(GetContainerCommandsCacheName(), out List<DockerCommandCacheDto> commands))
                 {
                     var commandDto = commands.FirstOrDefault(x => x.CommandId == result.ID);
-                    if (commandDto != null) commandDto.Output = $"Command:{command}\nError:\n{output.stderr}\nOutput:\n{output.stdout}";
+                    if (commandDto != null) commandDto.Output = $"Command:\n{command}\nError:\n{output.stderr}\nOutput:\n{output.stdout}";
                 }
                 memoryCache.Set(GetContainerCommandsCacheName(), commands, TimeSpan.FromHours(1));
             });
@@ -335,28 +349,24 @@ namespace Chargoon.ContainerManagement.Service
             ExecuteCommand($"docker system prune -f");
         }
 
-        private string CreateDockerComposeFile(DockerCompose dc)
+        private string CreateDockerComposeFile(string dockerCompose)
         {
             var dirPath = Path.Combine(Path.GetTempPath(), "ContainerManagement");
             var dockerComposeFilePath = Path.Combine(dirPath, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss-fff") + ".yml");
-
             if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
-
-            var yamlHelper = new YamlHelper(dc);
-            File.WriteAllText(dockerComposeFilePath, yamlHelper.ToYaml());
-
+            File.WriteAllText(dockerComposeFilePath, dockerCompose);
             return dockerComposeFilePath;
         }
 
-        public void Build(DockerCompose dc)
+        public void Build(string dockerCompose)
         {
-            var dockerComposeFilePath = CreateDockerComposeFile(dc);
+            var dockerComposeFilePath = CreateDockerComposeFile(dockerCompose);
             ExecuteCommand($"docker-compose build \"{dockerComposeFilePath}\"");
         }
 
-        public void Deploy(string stackName, DockerCompose dc)
+        public void Deploy(string stackName, string dockerCompose)
         {
-            var dockerComposeFilePath = CreateDockerComposeFile(dc);
+            var dockerComposeFilePath = CreateDockerComposeFile(dockerCompose);
             ExecuteCommand($"docker stack deploy -c \"{dockerComposeFilePath}\" {stackName}");
         }
 

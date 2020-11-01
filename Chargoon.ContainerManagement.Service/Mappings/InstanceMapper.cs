@@ -21,13 +21,28 @@ namespace Chargoon.ContainerManagement.Service.Mappings
                 Name = instance.Name,
                 UserId = instance.UserId,
                 TemplateId = instance.TemplateId,
-                Environments = (!string.IsNullOrEmpty(instance.Environments) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(instance.Environments) : new Dictionary<string, string>()),
 
-                User = (instance.User != null ? instance.User.ToDto() : null),
-                Template = (instance.Template != null ? instance.Template.ToDto() : null)
-            }.MergeEnvironments();
+            };
 
-            return dto;
+            try
+            {
+                dto.Environments = (!string.IsNullOrEmpty(instance.Environments) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(instance.Environments) : new Dictionary<string, string>());
+            }
+            catch { }
+
+            try
+            {
+                dto.User = (instance.User != null ? instance.User.ToDto() : null);
+            }
+            catch { }
+
+            try
+            {
+                dto.Template = (instance.Template != null ? instance.Template.ToDto() : null);
+            }
+            catch { }
+
+            return dto.MergeEnvironments();
         }
 
         public static IEnumerable<InstanceGetDto> ToDto(this IEnumerable<Instance> instances)

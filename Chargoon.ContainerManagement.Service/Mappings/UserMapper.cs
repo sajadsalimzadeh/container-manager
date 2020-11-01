@@ -11,14 +11,23 @@ namespace Chargoon.ContainerManagement.Service.Mappings
     {
         public static UserGetDto ToDto(this User user)
         {
-            return new UserGetDto()
+            var dto = new UserGetDto()
             {
                 Id = user.Id,
                 Username = user.Username,
-                Roles = user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries),
-
-                Instances = (user.Instances != null ? user.Instances.ToDto() : null)
             };
+            try
+            {
+                dto.Roles = user.Roles.Split(',', StringSplitOptions.RemoveEmptyEntries);
+            }
+            catch { }
+            try
+            {
+                dto.Instances = (user.Instances != null ? user.Instances.ToDto() : null);
+            }
+            catch { }
+
+            return dto;
         }
         public static IEnumerable<UserGetDto> ToDto(this IEnumerable<User> users)
         {
@@ -31,7 +40,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
             {
                 Username = dto.Username,
                 Password = dto.Password,
-                Roles = string.Join(',',dto.Roles),
+                Roles = string.Join(',', dto.Roles),
             };
         }
     }

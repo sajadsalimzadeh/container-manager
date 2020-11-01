@@ -1,7 +1,6 @@
-import React, { lazy, Suspense } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter, Route, Switch } from 'react-router-dom';
 import { Loading } from './components/loading';
-import ReactNotification from 'react-notifications-component'
 
 import Auth from './layouts/auth';
 import LayoutPanel from './layouts/panel';
@@ -9,12 +8,27 @@ import LayoutPanel from './layouts/panel';
 import './App.scss';
 import 'jquery/dist/jquery.min.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
+import { Init } from './services';
+import { message } from 'antd';
 
 function App() {
 
+  const [isLoad, setIsLoad] = useState(false)
+
+  useEffect(() => {
+    Init('assets/config.json').then(res => {
+      setIsLoad(true);
+    });
+
+    message.config({
+      duration: 5
+    });
+  }, []);
+
+  if (!isLoad) return <Loading />;
+
   return (
     <>
-      <ReactNotification />
       <HashRouter>
         <Switch>
           <Route path="/" exact component={Auth} />
@@ -22,10 +36,11 @@ function App() {
             <LayoutPanel>
               <Suspense fallback={<Loading />}>
                 <Switch>
+                  <Route path="/profile" component={lazy(() => import('./pages/profile'))} />
                   <Route path="/instances" component={lazy(() => import('./pages/instances'))} />
                   <Route path="/users" component={lazy(() => import('./pages/users'))} />
-                  <Route path="/branches" component={lazy(() => import('./pages/branches'))} />
-                  <Route path="/profile" component={lazy(() => import('./pages/profile'))} />
+                  <Route path="/images" component={lazy(() => import('./pages/images'))} />
+                  <Route path="/templates" component={lazy(() => import('./pages/templates'))} />
                 </Switch>
               </Suspense>
             </LayoutPanel>

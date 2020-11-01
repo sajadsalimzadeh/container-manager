@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Form, Input, Modal, Row, Select } from 'antd';
+import { Button, Col, Form, Input, message, Modal, Row, Select } from 'antd';
 import { RouteComponentProps, useHistory } from "react-router";
-import { store as notify } from 'react-notifications-component';
-import { notificationOptions } from '../../notification';
-import { Loading } from '../../components/loading';
 import { InstanceGetDto, UserGetDto } from '../../models';
-import { Auth_ChangeUser, Auth_SetLoginInfo, Instance_Add, Instance_Remove, User_Add, User_GetAll } from '../../services';
+import { Auth_ChangeUser, Auth_SetLoginInfo, Instance_Add, Instance_Remove, User_Add, User_GetAll, User_ResetPassword } from '../../services';
 import useForceUpdate from 'use-force-update';
 
 declare type Modals = '' | 'add-user' | 'add-instance';
@@ -14,53 +11,56 @@ interface Props extends RouteComponentProps<{}> {
 
 }
 
-export default (props: Props) => {
+export default () => {
 
     const history = useHistory();
     const [modal, setModal] = useState<Modals>('');
-    const [isloading, setIsloading] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<UserGetDto[]>([]);
     const [selectedUser, setSelectedUser] = useState<UserGetDto>();
+    const [searchValue, setSearchValue] = useState('');
 
     const forceUpdate = useForceUpdate();
 
     const load = () => {
-        setIsloading(true);
+        setLoading(true);
         User_GetAll().then(res => {
             if (res.data.success) {
                 setItems(res.data.data);
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Fetch items failed' });
+                message.error(res.data.message ?? 'Fetch items failed');
             }
-        }).finally(() => setIsloading(false))
+        }).finally(() => setLoading(false))
     }
 
     const submitAddUser = (values: any) => {
+        setLoading(true);
         User_Add(values).then(res => {
             if (res.data.success) {
                 if (res.data.success) {
                     load();
                     setModal('');
-                    notify.addNotification({ ...notificationOptions, type: 'success', message: 'Add user successful' });
+                   message.success('Add user successful');
                 } else {
-                    notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Add user failed' });
+                    message.error(res.data.message ?? 'Add user failed');
                 }
             }
-        });
+        }).finally(() => setLoading(false));
     }
 
     const submitAddInstance = (values: any) => {
         if (!selectedUser) return;
-        values.userId = selectedUser.id
+        values.userId = selectedUser.id;
+        setLoading(true);
         Instance_Add(values).then(res => {
             if (res.data.success) {
                 load();
                 setModal('');
-                notify.addNotification({ ...notificationOptions, type: 'success', message: 'Add instance successful' });
+               message.success('Add instance successful');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Add instance failed' });
+                message.error(res.data.message ?? 'Add instance failed');
             }
-        });
+        }).finally(() => setLoading(false));
     }
 
     const showEnvironments = (instance: InstanceGetDto) => {
@@ -76,29 +76,48 @@ export default (props: Props) => {
         if (window.confirm(`Are you sure to remove this instance ?`)) {
             instance.isRemoving = true;
             forceUpdate();
+            setLoading(true);
             Instance_Remove(instance.id).then(res => {
                 if (res.data.success) {
                     load();
-                    notify.addNotification({ ...notificationOptions, type: 'success', message: 'Remove instance successful' });
+                   message.success('Remove instance successful');
                 } else {
-                    notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Add instance failed' });
+                    message.error(res.data.message ?? 'Add instance failed');
                 }
                 instance.isRemoving = false;
                 forceUpdate();
-            });
+            }).finally(() => setLoading(false));
         }
     }
 
     const changeUser = (id: number) => {
+        setLoading(true);
         Auth_ChangeUser(id).then(res => {
             if (res.data.success) {
                 history.push('/instances');
                 Auth_SetLoginInfo(res.data.data);
-                notify.addNotification({ ...notificationOptions, type: 'success', message: 'Change user done successfully' });
+               message.success('Change user done successfully');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Change user failed' });
+                message.error(res.data.message ?? 'Change user failed');
             }
-        })
+        }).finally(() => setLoading(false));
+    }
+
+    const resetPassword = (id: number) => {
+        const password = window.prompt('Enter new password : ');
+        if (!password) {
+            message.error('Reset Password aborted');
+            return;
+        }
+
+        setLoading(true);
+        User_ResetPassword(id, { newPassword: password }).then(res => {
+            if (res.data.success) {
+               message.success('Reset user password done successfully');
+            } else {
+                message.error(res.data.message ?? 'Reset user password failed');
+            }
+        }).finally(() => setLoading(false));
     }
 
     useEffect(() => {
@@ -107,21 +126,21 @@ export default (props: Props) => {
 
     const roles = ["Admin", "User"]
 
-    return <div className="page-users">
-        {isloading ? <Loading /> : null}
+    return <div className={"page-users" + (loading ? ' loading' : '')}>
         <div className="wrapper">
             <div className="title-bar">
                 <h4>Users</h4>
                 <button className="btn btn-primary" onClick={() => load()}>Reload</button>
                 <button className="btn btn-success" onClick={() => setModal('add-user')}>Add New User</button>
+                <Input placeholder="Search by username ..." value={searchValue} onChange={e => setSearchValue(e.target.value)}/>
             </div>
             <table className="custom-table">
                 <colgroup>
                     <col width="70px" />
-                    <col width="150px" />
+                    <col width="120px" />
                     <col width="170px" />
                     <col width="" />
-                    <col width="250px" />
+                    <col width="360px" />
                 </colgroup>
                 <thead>
                     <tr className="table-head">
@@ -133,7 +152,7 @@ export default (props: Props) => {
                     </tr>
                 </thead>
                 <tbody>
-                    {items.map(user => <tr key={user.id}>
+                    {items.filter(x => x.username.toLowerCase().indexOf(searchValue.toLowerCase()) > -1).map(user => <tr key={user.id}>
                         <td>{user.id}</td>
                         <td>{user.username}</td>
                         <td>{user.roles.join(',')}</td>
@@ -141,6 +160,7 @@ export default (props: Props) => {
                             <div className="instances">
                                 {user.instances.map(instance => <div key={instance.id}>
                                     <span className="badge badge-dark">name: {instance.name}</span>
+                                    <span className="badge badge-dark">template: {instance.template?.name}</span>
                                     <span className="badge badge-dark">port: {instance.environments.BASE_PORT}**</span>
                                     <button className="btn badge badge-primary" onClick={() => showEnvironments(instance)}>Environments</button>
                                     <button className="btn badge badge-danger" onClick={() => removeInstance(instance)} disabled={instance.isRemoving}>
@@ -159,14 +179,15 @@ export default (props: Props) => {
                             <div className="actions">
                                 <button className="btn btn-warning" onClick={() => changeUser(user.id)}>Change User</button>
                                 <button className="btn btn-success" onClick={() => { setSelectedUser(user); setModal('add-instance') }}>Add Instance</button>
+                                <button className="btn btn-dark" onClick={() => resetPassword(user.id)}>Reset Password</button>
                             </div>
                         </td>
                     </tr>)}
                 </tbody>
             </table>
         </div>
-        <Modal title="Create new user" visible={modal === 'add-user'} onCancel={() => setModal('')} footer={null}>
-            <Form onFinish={submitAddUser}>
+        <Modal title="User Form" visible={modal === 'add-user'} onCancel={() => setModal('')} footer={null}>
+            <Form className="floating-label" onFinish={submitAddUser}>
                 <Row>
                     <Col xs={24}>
                         <Form.Item name="username" label="Username" rules={[{ required: true }]}>

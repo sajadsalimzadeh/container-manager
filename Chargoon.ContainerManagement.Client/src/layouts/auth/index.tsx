@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { RouteComponentProps, useHistory } from 'react-router';
 import { Auth_Login, Auth_SetLoginInfo } from '../../services';
-import { store as notify } from 'react-notifications-component';
 import { Loading } from '../../components/loading';
 import Cookies from 'js-cookie';
+import { message } from 'antd';
 
 interface Props extends RouteComponentProps<{}> {
 
@@ -25,7 +25,7 @@ function required(value: string): Validation {
     return { isvalid: false, message: 'this field is required' }
 };
 
-export default (props: Props) => {
+export default () => {
 
     const history = useHistory();
     const [isloading, setIsloading] = useState(false);
@@ -50,19 +50,7 @@ export default (props: Props) => {
                 Auth_SetLoginInfo(res.data.data);
                 history.push('/instances');
             } else {
-                notify.addNotification({
-                    title: "Bad Request",
-                    message: res.data.message,
-                    type: "danger",
-                    insert: "top",
-                    container: "top-right",
-                    animationIn: ['animated', 'slideInDown'],
-                    animationOut: ['animated', 'fadeOut'],
-                    dismiss: {
-                        duration: 5000,
-                        onScreen: true
-                    }
-                });
+                message.error(res.data.message ?? 'Username or password is incorrect');
 
                 form.password.value = '';
                 setForm({ ...form });

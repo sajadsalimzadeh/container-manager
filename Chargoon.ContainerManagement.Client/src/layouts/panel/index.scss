@@ -5,8 +5,13 @@
     flex-direction: column;
 
     >nav {
+        position: fixed;
+        top:0;
+        left: 0;
+        right: 0;
+        z-index: 1000;
         padding: 0 10px 0 0;
-        box-shadow: 0 0 5px #000;;
+        box-shadow: 0 0 1px rgba(0, 0, 0, 0.929);
 
         .navbar-brand {
             padding: 10px 20px;
@@ -44,6 +49,7 @@
     >main {
         flex: 1;
         display: flex;
+        padding-top: 70px;
         flex-direction: column;
         background: linear-gradient(45deg, #4158d0, #c850c0);
 

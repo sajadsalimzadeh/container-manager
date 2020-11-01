@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Domain.Data.Repositories
 {
-    public interface IBranchRepository : ICrudRepository<Branch, int>
+    public interface IImageRepository : ICrudRepository<Image, int>
     {
     }
 }

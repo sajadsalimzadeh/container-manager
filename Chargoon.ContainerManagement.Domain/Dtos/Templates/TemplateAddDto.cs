@@ -7,10 +7,10 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Templates
 {
     public class TemplateChangeDto
     {
-        public int Id { get; set; }
         public string Name { get; set; }
-        public DockerCompose DockerCompose { get; set; }
-        public Dictionary<string, string> Environments { get; set; }
+        public string InsertCron { get; set; }
+        public string DockerCompose { get; set; }
         public bool IsActive { get; set; }
+        public Dictionary<string, string> Environments { get; set; }
     }
 }

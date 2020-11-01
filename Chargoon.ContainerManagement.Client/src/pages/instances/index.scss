@@ -61,14 +61,24 @@
             background-color: #36304a;
             transition: all 1s ease;
             animation: fade-in 1s ease;
-
-            &.running {
-                background-color: #1cac64;
-            }
+            border: 1px solid rgba(0, 0, 0, 0.122);
 
             &.shutdown {
                 background-color: #df6057;
             }
+
+            &.service-running {
+                background-color: #faff00;
+            }
+
+            &.container-running {
+                background-color: #faff00;
+            }
+
+            &.service-running.container-running {
+                background-color: #1cac64;
+            }
+
         }
     }
 

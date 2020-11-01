@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, withRouter } from 'react-router-dom';
 import { Auth_HasRole } from '../../services';
 
@@ -15,7 +15,7 @@ export default withRouter((props: Props) => {
     return <div className="layout-panel">
         <nav className="navbar navbar-expand-lg navbar-dark bg-dark">
             <div className="navbar-brand">
-                <img src="assets/images/logo.png" />
+                <img src="assets/images/logo.png" alt="logo"/>
             </div>
             <button className="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarText"
                 aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
@@ -35,10 +35,16 @@ export default withRouter((props: Props) => {
                             <span>Instances</span>
                         </Link>
                     </li> : null}
-                    {hasRole('user') ? <li className="nav-item">
-                        <Link to="/branches" className="nav-link">
+                    {hasRole('admin') ? <li className="nav-item">
+                        <Link to="/images" className="nav-link">
                             <i className="fa fa-code-fork"></i>
-                            <span>Branches</span>
+                            <span>Images</span>
+                        </Link>
+                    </li> : null}
+                    {hasRole('admin') ? <li className="nav-item">
+                        <Link to="/templates" className="nav-link">
+                            <i className="fa fa-code"></i>
+                            <span>Templates</span>
                         </Link>
                     </li> : null}
                     {hasRole('admin') ? <li className="nav-item">

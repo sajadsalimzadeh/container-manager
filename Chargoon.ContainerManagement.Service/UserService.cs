@@ -76,16 +76,19 @@ namespace Chargoon.ContainerManagement.Service
             return user;
         }
 
+        public UserGetDto ResetPassword(int id, UserResetPasswordDto dto)
+        {
+            var user = userRepository.Get(id);
+            user.Password = dto.NewPassword;
+            return userRepository.Update(user).ToDto();
+        }
+
         public UserGetDto ChangePassword(int id, UserChangePasswordDto dto)
         {
             var user = userRepository.Get(id);
             if (user.Password != dto.CurrentPassword) throw new Exception("Current Password is not valid");
-
-            user.Password = dto.newPassword;
-
-            user = userRepository.Update(user);
-
-            return user.ToDto();
+            user.Password = dto.NewPassword;
+            return userRepository.Update(user).ToDto();
         }
 
         public UserGetDto ChangeOwnPassword(UserChangePasswordDto dto)

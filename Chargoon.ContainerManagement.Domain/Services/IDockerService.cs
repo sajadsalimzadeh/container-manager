@@ -9,13 +9,13 @@ namespace Chargoon.ContainerManagement.Domain.Services
     public interface IDockerService
     {
         GetArchiveFromContainerResponse ArchiveContainer(string id, GetArchiveFromContainerParameters dto);
-        void Deploy(string stackName, DockerCompose dc);
+        void Deploy(string stackName, string dockerCompose);
         void ExtractArchiveToContainerAsync(string id, ContainerPathStatParameters dto, Stream stream);
         IEnumerable<ContainerListResponse> GetAllContainer();
         IEnumerable<ImagesListResponse> GetAllImage();
         IEnumerable<NodeListResponse> GetAllNode();
         IEnumerable<SwarmService> GetAllService();
-        IEnumerable<SwarmService> GetAllServiceByStackName(string stackName);
+        IEnumerable<SwarmService> GetAllServiceByPrefix(string stackName);
         IEnumerable<ContainerFileSystemChangeResponse> GetContainerChanges(string id);
         Stream GetContainerExport(string id);
         ContainerInspectResponse GetContainerInspect(string id);
@@ -37,6 +37,7 @@ namespace Chargoon.ContainerManagement.Domain.Services
         ContainerExecInspectResponse GetContainerExecInspect(string id);
         string GetExecCommandContainerLog(string id);
         void ClearExitedCommands();
-        void Build(DockerCompose dc);
+        void Build(string dockerCompose);
+        IEnumerable<ContainerListResponse> GetAllContainerByPrefix(string prefix);
     }
 }

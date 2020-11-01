@@ -14,6 +14,7 @@ namespace Chargoon.ContainerManagement.Domain.DataModels
         public string Name { get; set; }
         public string DockerCompose { get; set; }
         public string Environments { get; set; }
+        public string InsertCron { get; set; }
         public bool IsActive { get; set; }
 
         public IEnumerable<TemplateCommand> Commands { get; set; }

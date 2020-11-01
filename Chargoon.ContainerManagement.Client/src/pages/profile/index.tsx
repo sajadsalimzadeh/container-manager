@@ -1,59 +1,50 @@
-import React, { useEffect, useState } from 'react';
-import { RouteComponentProps } from "react-router";
-import { UserGetDto } from '../../models';
+import React, { useCallback, useEffect, useState } from 'react';
 import { User_ChangeOwnPassword, User_GetOwn } from '../../services';
-import { store as notify } from 'react-notifications-component';
-import { notificationOptions } from '../../notification';
-import { Button, Col, Form, Input, Modal, Row } from 'antd';
+import { Button, Col, Form, Input, message, Modal, Row } from 'antd';
 import { useForm } from 'antd/lib/form/Form';
 
 declare type Modals = '' | 'change-password';
 
-interface Props extends RouteComponentProps<{}> {
 
-}
+export default () => {
 
-export default (props: Props) => {
-
-    const [user, setUser] = useState<UserGetDto>();
     const [modal, setModal] = useState<Modals>('');
 
     const [form] = useForm();
     const [changePasswordForm] = useForm();
 
-    const load = () => {
+    const load = useCallback(() => {
         User_GetOwn().then(res => {
             if (res.data.success) {
-                setUser(res.data.data);
                 form.setFieldsValue(res.data.data);
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Fetch model failed' });
+                message.error(res.data.message ?? 'Fetch model failed');
             }
         })
-    }
+    }, [form]);
 
     const submitChangePassword = (values: { currentPassword: string, newPassword: string, repeatPassword: string }) => {
         if (values.newPassword !== values.repeatPassword) {
-            notify.addNotification({ ...notificationOptions, type: 'warning', message: 'New And Repeat Password is not same' });
+            message.warn('New And Repeat Password is not same');
         }
         User_ChangeOwnPassword({currentPassword: values.currentPassword, newPassword: values.newPassword}).then(res => {
             if(res.data.success) {
                 setModal('');
-                notify.addNotification({ ...notificationOptions, type: 'success', message: res.data.message ?? 'Password successfully changed' });
+               message.success(res.data.message ?? 'Password successfully changed');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Change password failed' });
+                message.error(res.data.message ?? 'Change password failed');
             }
         });
     }
 
     useEffect(() => {
         load();
-    }, [])
+    }, [load])
 
     return <div className="page-profile">
         <div className="card p-5">
             <div className="avatar-box">
-                <img className="avatar" src="assets/images/avatar.jpg" />
+                <img className="avatar" src="assets/images/avatar.jpg" alt="avatar"/>
             </div>
             <Form className="floating-label pt-4" form={form}>
                 <Row>
@@ -73,7 +64,7 @@ export default (props: Props) => {
                 </Row>
             </Form>
         </div>
-        <Modal title="Change Password" visible={modal == 'change-password'} onCancel={() => setModal('')} footer={null}>
+        <Modal title="Change Password" visible={modal === 'change-password'} onCancel={() => setModal('')} footer={null}>
             <Form className="floating-label" form={changePasswordForm} onFinish={submitChangePassword}>
                 <Row>
                     <Col xs={24}>

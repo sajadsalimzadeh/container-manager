@@ -18,12 +18,6 @@ namespace Chargoon.ContainerManagement.Domain.Models
         public string Repository { get; set; }
     }
 
-    public class AppSettingsDidgah
-    {
-        public string DevelopmentPackPath { get; set; }
-        public string BuildLogPath { get; set; }
-    }
-
     public class AppSettingsHangfire
     {
         public string DockerSystemPruneCron { get; set; } = "*/10 * * * *";

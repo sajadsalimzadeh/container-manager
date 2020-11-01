@@ -15,16 +15,16 @@ namespace Chargoon.ContainerManagement.Service.Test
             var dc = new DockerCompose();
             var web = new DockerComposeService();
             web.Image = "nodeapp";
-            web.Ports = new List<DockerComposeServicePort>()
+            web.Ports = new List<string>()
             {
-                new DockerComposeServicePort() { Published = "8090", Target = "8080" }
+                "8090:8080"
             };
             web.Environment = new List<string>()
             {
                 "DEBUG=1",
                 "DATABASE_USERNAME=digah",
                 "DATABASE_PASSWORD=lfdc82zo",
-                "BRANCH=Release",
+                "Image=Release",
                 "COMPOSE_PROJECT_NAME=sajadsalimzadeh_test",
                 "BUILDVERSION=2020.10.25",
             };

@@ -10,6 +10,7 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Instances
     {
         public int InstanceId { get; set; }
         public IEnumerable<SwarmService> Services { get; set; }
+        public IEnumerable<ContainerListResponse> Containers { get; set; }
         public IEnumerable<TemplateCommandExecDto> TemplateCommandExecs { get; set; }
     }
 }

@@ -18,7 +18,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
             services.AddScoped<IStartupService, StartupService>();
 
             services.AddScoped<IUserRepository, UserRepository>();
-            services.AddScoped<IBranchRepository, BranchRepository>();
+            services.AddScoped<IImageRepository, ImageRepository>();
             services.AddScoped<IInstanceRepository, InstanceRepository>();
             services.AddScoped<ITemplateRepository, TemplateRepository>();
             services.AddScoped<ITemplateCommandRepository, TemplateCommandRepository>();
@@ -26,7 +26,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
             services.AddTransient<ILoggerService, LoggerService>();
 
             services.AddScoped<IUserService, UserService>();
-            services.AddScoped<IBranchService, BranchService>();
+            services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IDockerService, DockerService>();
             services.AddScoped<IInstanceService, InstanceService>();
             services.AddScoped<ITemplateService, TemplateService>();

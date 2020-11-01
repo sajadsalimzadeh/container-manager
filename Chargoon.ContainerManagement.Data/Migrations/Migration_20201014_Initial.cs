@@ -27,6 +27,7 @@ namespace Chargoon.ContainerManagement.Data.Migrations
                     Name VARCHAR(64) NOT NULL,
                     DockerCompose NVARCHAR(MAX) NULL,
                     Environments NVARCHAR(MAX) NULL,
+                    InsertCron VARCHAR(32) NULL,
                     IsActive BIT NOT NULL DEFAULT 1
                 )
             ");
@@ -59,11 +60,11 @@ namespace Chargoon.ContainerManagement.Data.Migrations
             ");
 
             conn.Execute($@"
-                CREATE TABLE [Branch] (
+                CREATE TABLE [Image] (
                     Id INT NOT NULL IDENTITY PRIMARY KEY,
                     Name VARCHAR(64) NOT NULL,
-                    DockerCompose NVARCHAR(MAX) NULL,
-                    IsBuildEnable BIT NOT NULL DEFAULT 1
+                    BuildPath NVARCHAR(512) NULL,
+                    BuildCron VARCHAR(32) NULL
                 )
             ");
         }

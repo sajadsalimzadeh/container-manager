@@ -1,30 +1,26 @@
 import React, { useEffect, useState } from 'react';
-import { RouteComponentProps } from "react-router";
-import { Loading } from '../../components/loading';
 import { InstanceGetDto, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto } from '../../models';
 import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal } from '../../services';
-import { store as notify } from 'react-notifications-component';
-import { notificationOptions } from '../../notification';
-import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, Input, Spin } from 'antd';
+import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, Input, Spin, message } from 'antd';
 import useInterval from '@use-it/interval';
 import { useForm } from 'antd/lib/form/Form';
 import useForceUpdate from 'use-force-update';
 
 declare type Modals = '' | 'change-template' | 'help' | 'command-detail';
 
-interface Props extends RouteComponentProps<{}> {
-
-}
 
 export default () => {
 
-    const [isloading, setIsloading] = useState(false);
+    const [loading, setLoading] = useState(false);
     const [modal, setModal] = useState<Modals>('');
     const [items, setItems] = useState<InstanceGetDto[]>([]);
     const [templates, setTemplates] = useState<TemplateGetDto[]>([]);
     const [selectedInstance, setSelectedInstance] = useState<InstanceGetDto>();
     const [selectedCommand, setSelectedCommand] = useState<TemplateCommandExecDto>();
     const [changeTemplateForm] = useForm();
+
+    const [isOnScreen, setIsOnScreen] = useState(true);
+    const [isSignalOnLoading, setIsSignalOnLoading] = useState(false);
 
     const forceUpdate = useForceUpdate();
 
@@ -33,28 +29,31 @@ export default () => {
     }, 1000);
 
     const load = () => {
-        setIsloading(true);
+        setLoading(true);
         Instance_GetAllOwn().then(res => {
             if (res.data.success) {
                 setItems(res.data.data);
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Fetch items failed' });
+                message.error(res.data.message ?? 'Fetch items failed');
             }
-        }).finally(() => setIsloading(false))
+        }).finally(() => setLoading(false))
     }
 
     const startInstance = (instance: InstanceGetDto) => {
         instance.isStarting = true;
         forceUpdate();
-        notify.addNotification({ ...notificationOptions, type: 'default', message: 'Starting Instance please wait' });
+        message.info('Starting Instance please wait');
         Instance_StartOwn(instance.id).then(res => {
             if (res.data.success) {
                 instance.isStarting = false;
                 forceUpdate();
-                notify.addNotification({ ...notificationOptions, type: 'success', message: 'Starting instance is in progress please wait' });
+               message.success('Starting instance is in progress please wait');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Starting instance failed' })
+                message.error(res.data.message ?? 'Starting instance failed')
             }
+        }).finally(() => {
+            instance.isStarting = false;
+            forceUpdate();
         });
     }
 
@@ -63,10 +62,13 @@ export default () => {
         forceUpdate();
         Instance_StopOwn(instance.id).then(res => {
             if (res.data.success) {
-                notify.addNotification({ ...notificationOptions, type: 'success', message: 'Stopping instance is in progress please wait' });
+               message.success('Stopping instance is in progress please wait');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Stopping instance failed' });
+                message.error(res.data.message ?? 'Stopping instance failed');
             }
+        }).finally(() => {
+            instance.isStopping = false;
+            forceUpdate();
         });
     }
 
@@ -75,9 +77,9 @@ export default () => {
         forceUpdate();
         Instance_RunCommand(instance.id, templateCommand.id).then(res => {
             if (res.data.success) {
-                notify.addNotification({ ...notificationOptions, type: 'success', message: 'Command is running inside container please wait until done' });
+               message.success('Command is running inside container please wait until done');
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Command running failed' });
+                message.error(res.data.message ?? 'Command running failed');
             }
         }).finally(() => {
             templateCommand.isRunning = false;
@@ -93,7 +95,7 @@ export default () => {
             if (res.data.success) {
                 setTemplates(res.data.data);
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Fetch templates failed' })
+                message.error(res.data.message ?? 'Fetch templates failed')
             }
         }).finally(() => {
 
@@ -106,9 +108,9 @@ export default () => {
                 if (res.data.success) {
                     load();
                     setModal('');
-                    notify.addNotification({ ...notificationOptions, type: 'success', message: 'Change template done successfully' })
+                   message.success('Change template done successfully')
                 } else {
-                    notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Change template failed' })
+                    message.error(res.data.message ?? 'Change template failed')
                 }
             }).finally(() => {
 
@@ -133,26 +135,30 @@ export default () => {
             if (res.data.success) {
                 command.logs = res.data.data;
             } else {
-                notify.addNotification({ ...notificationOptions, type: 'danger', message: res.data.message ?? 'Fetch command log failed' })
+                message.error(res.data.message ?? 'Fetch command log failed')
             }
             setSelectedCommand({ ...command, isLoadingLogs: false });
         })
     }
 
     const loadSignal = () => {
-        Instance_Signal().then(res => {
-            if (res.data.success) {
-                for (let i = 0; i < res.data.data.length; i++) {
-                    const signal = res.data.data[i];
-                    const instance = items.find(x => x.id == signal.instanceId);
-                    if (instance) {
-                        instance.services = signal.services;
-                        instance.commadns = signal.templateCommandExecs;
+        if (isOnScreen && !isSignalOnLoading) {
+            setIsSignalOnLoading(true);
+            Instance_Signal().then(res => {
+                if (res.data.success) {
+                    for (let i = 0; i < res.data.data.length; i++) {
+                        const signal = res.data.data[i];
+                        const instance = items.find(x => x.id === signal.instanceId);
+                        if (instance) {
+                            instance.services = signal.services;
+                            instance.commadns = signal.templateCommandExecs;
+                            instance.containers = signal.containers;
+                        }
                     }
+                    forceUpdate();
                 }
-                forceUpdate();
-            }
-        })
+            }).finally(() => setIsSignalOnLoading(false));
+        }
     }
 
     const getCommandCssClass = (command: TemplateCommandGetDto) => {
@@ -167,25 +173,43 @@ export default () => {
     }
 
     const getInstanceAllService = (instance: InstanceGetDto): string[] => {
-        if (!instance.template?.dockerCompose?.services) return [];
-        return Object.keys(instance.template.dockerCompose.services);
+        if (!instance.template?.dockerComposeObj?.services) return [];
+        return Object.keys(instance.template.dockerComposeObj.services);
     }
 
-    const isInstanceServiceRunning = (instance: InstanceGetDto, serviceName: string): number => {
-        if (!instance.services) return 0;
+    const getServiceState = (instance: InstanceGetDto, serviceName: string): number => {
+        if (!instance.services || !serviceName) return 0;
         const searchValue = (instance.name + "_" + serviceName).toLowerCase();
         return instance.services.findIndex(x => (x.spec ? x.spec.name.toLowerCase().indexOf(searchValue) > -1 : false)) > -1 ? 1 : -1;
     }
 
-    const isInstanceAllServiceStarted = (instance: InstanceGetDto): boolean => {
-        return getInstanceAllService(instance).findIndex((service) => {
-            return isInstanceServiceRunning(instance, service) !== 1;
-        }) < 0;
+    const getContainerState = (instance: InstanceGetDto, containerName: string): number => {
+        if (!instance.containers || !containerName) return 0;
+        const searchValue = (instance.name + "_" + containerName).toLowerCase();
+        return instance.containers.findIndex(x => x.names.findIndex(y => y.toLowerCase().indexOf(searchValue) > -1) > -1) > -1 ? 1 : -1;
     }
+
+    // const isInstanceAllServiceStarted = (instance: InstanceGetDto): boolean => {
+    //     return getInstanceAllService(instance).findIndex((service) => {
+    //         return getServiceState(instance, service) !== 1;
+    //     }) < 0;
+    // }
 
     const isInstanceAllServiceStoped = (instance: InstanceGetDto): boolean => {
         return getInstanceAllService(instance).findIndex((service) => {
-            return isInstanceServiceRunning(instance, service) === 1;
+            return getServiceState(instance, service) === 1;
+        }) < 0;
+    }
+
+    const isInstanceAllContainerStarted = (instance: InstanceGetDto): boolean => {
+        return getInstanceAllService(instance).findIndex((service) => {
+            return getContainerState(instance, service) !== 1;
+        }) < 0;
+    }
+
+    const isInstanceAllContainerStoped = (instance: InstanceGetDto): boolean => {
+        return getInstanceAllService(instance).findIndex((service) => {
+            return getContainerState(instance, service) === 1;
         }) < 0;
     }
 
@@ -196,7 +220,7 @@ export default () => {
 
     const getReplacedDockerCompose = (instance: InstanceGetDto): any => {
         if (instance.template) {
-            let dockerComposeJson = JSON.stringify(instance.template.dockerCompose);
+            let dockerComposeJson = JSON.stringify(instance.template.dockerComposeObj);
             for (const key in instance.environments) {
                 const value = instance.environments[key];
                 while (dockerComposeJson.indexOf(`{${key}}`) > -1) dockerComposeJson = dockerComposeJson.replace(`{${key}}`, value);
@@ -210,33 +234,19 @@ export default () => {
     }, []);
 
     useEffect(() => {
-        let isChange = false;
-        for (let i = 0; i < items.length; i++) {
-            const item = items[i];
-            if (item.isStarting && isInstanceAllServiceStarted(item)) {
-                item.isStarting = false;
-                isChange = true;
-            }
 
-            if (item.isStopping && isInstanceAllServiceStoped(item)) {
-                item.isStopping = false;
-                isChange = true;
-            }
-        }
-        if (isChange) forceUpdate();
     }, [items])
 
     const baseUrl = window.location.protocol + '//' + window.location.hostname;
 
-    return <div className="page-instances">
-        {isloading ? <Loading /> : null}
+    return <div className="page-instances" onMouseEnter={() => setIsOnScreen(true)} onMouseLeave={() => setIsOnScreen(false)}>
         <div className="wrapper">
             <div className="title-bar">
                 <h4>Instances</h4>
                 <button className="btn btn-primary" onClick={load}>Reload</button>
                 <button className="btn btn-info" onClick={() => setModal('help')}>Help</button>
             </div>
-            <table className="custom-table">
+            <table className={"custom-table" + (loading ? ' loading' : '')}>
                 <colgroup>
                     <col width="150px" />
                     <col width="180px" />
@@ -265,6 +275,7 @@ export default () => {
                             <div className="ports">
                                 {instance.services?.map((service, i) => {
                                     let dockerComposeService: any;
+                                    let dockerComposeServiceName: any;
                                     try {
                                         const dockerCompose = getReplacedDockerCompose(instance);
                                         const serviceNames = Object.keys(dockerCompose.services);
@@ -272,6 +283,8 @@ export default () => {
                                             const serviceName = serviceNames[k];
                                             if (service.spec.name.toLowerCase().endsWith(serviceName.toLowerCase())) {
                                                 dockerComposeService = dockerCompose.services[serviceName];
+                                                dockerComposeServiceName = serviceName;
+                                                break;
                                             }
                                         }
                                     } catch { }
@@ -281,14 +294,17 @@ export default () => {
                                             let dockerComposeServicePort: any;
                                             if (dockerComposeService) {
                                                 try {
-                                                    dockerComposeServicePort = dockerComposeService.ports.find((x: any) => x.published == port.publishedPort);
+                                                    dockerComposeServicePort = dockerComposeService.ports.find((x: any) => x.published === port.publishedPort);
                                                 } catch {
 
                                                 }
                                             }
+                                            const containerState = (dockerComposeServiceName ? getContainerState(instance, dockerComposeServiceName) : -1);
 
                                             return <span key={j}>
-                                                <a href={`${baseUrl}:${port.publishedPort}`} target="_blank" rel="noopener noreferrer">{port.publishedPort}</a>
+                                                {containerState === 1 ?
+                                                    <a href={`${baseUrl}:${port.publishedPort}`} target="_blank" rel="noopener noreferrer">{port.publishedPort}</a>
+                                                    : port.publishedPort}
                                                 :
                                                 {dockerComposeServicePort?.name ? dockerComposeServicePort.name : port.targetPort}
                                             </span>;
@@ -300,9 +316,18 @@ export default () => {
                         <td>
                             <div className="services">
                                 {getInstanceAllService(instance).map((service, i) => {
-                                    const status = isInstanceServiceRunning(instance, service);
-                                    return <Tooltip key={i} title={service} placement={'top'}>
-                                        <span className={status === 0 ? '' : (status === 1 ? 'running' : 'shutdown')}></span>
+                                    const serviceState = getServiceState(instance, service);
+                                    const containerState = getContainerState(instance, service);
+                                    return <Tooltip key={i} title={<>
+                                        <div>Name : {service}</div>
+                                        <div>Service State: {(serviceState === 1 ? 'Running' : (serviceState === 0 ? 'NA' : 'Down'))}</div>
+                                        <div>Container State : {(containerState === 1 ? 'Running' : (containerState === 0 ? 'NA' : 'Down'))}</div>
+                                    </>} placement={'top'}>
+                                        <span className={
+                                            (containerState === 1 ? ' container-running' : '') +
+                                            (serviceState === 1 ? ' service-running' : '') +
+                                            (serviceState === 0 || containerState === 0 ? '' : ' shutdown')
+                                        }></span>
                                     </Tooltip>
                                 })}
                             </div>
@@ -310,7 +335,7 @@ export default () => {
                         <td>
                             <div className="commands">
                                 {instance.commadns?.map((tce, i) => {
-                                    const tc = instance.template.commands.find(x => x.templateId === tce.templateCommandId);
+                                    const tc = instance.template.commands.find(x => x.id === tce.templateCommandId);
                                     if (!tc || !tce.inspect) return null;
                                     return <button key={i} title={(tce.inspect.exitCode ? `exit code : ${tce.inspect.exitCode}` : '')} onClick={() => showCommandDetail(tc, tce)}>
                                         {tce.inspect.running ?
@@ -328,10 +353,11 @@ export default () => {
                         </td>
                         <td>
                             {instance.template ? <div className="actions">
-                                {isInstanceAllServiceStarted(instance) || !isInstanceAllServiceStoped(instance) ? <button className="btn btn-danger" disabled={instance.isStopping} onClick={() => stopInstance(instance)}>{instance.isStopping ? 'Stopping...' : 'Stop'}</button> : null}
-                                {!isInstanceAllServiceStarted(instance) || isInstanceAllServiceStoped(instance) ? <button className="btn btn-success" disabled={instance.isStarting} onClick={() => startInstance(instance)}>{instance.isStarting ? 'Starting...' : 'Start'}</button> : null}
+                                {isInstanceAllContainerStarted(instance) || !isInstanceAllServiceStoped(instance) ? <button className="btn btn-danger" disabled={instance.isStopping} onClick={() => stopInstance(instance)}>{instance.isStopping ? 'Stopping...' : 'Stop'}</button> : null}
+                                {!isInstanceAllContainerStarted(instance) || isInstanceAllContainerStoped(instance) ? <button className="btn btn-success" disabled={instance.isStarting} onClick={() => startInstance(instance)}>{instance.isStarting ? 'Starting...' : 'Start'}</button> : null}
+
                                 <button className="btn btn-primary" onClick={() => showEnvironments(instance)}>ENV</button>
-                                {instance.template?.commands?.length && isInstanceAllServiceStarted(instance) ? <Dropdown overlay={<Menu>
+                                {instance.template?.commands?.length && isInstanceAllContainerStarted(instance) ? <Dropdown overlay={<Menu>
                                     {instance.template?.commands?.map(templateCommand => {
                                         const isRunning = templateCommand.isRunning || isCommandRunning(instance, templateCommand);
                                         return <Menu.Item key={templateCommand.id}>
@@ -354,7 +380,7 @@ export default () => {
                     <Col xs={24}>
                         <Form.Item name="templateId" label="Template">
                             <Select showSearch allowClear placeholder="Search & Choose Template">
-                                {templates.map(template => <Select.Option key={template.id} value={template.id}>{template.name}</Select.Option>)}
+                                {templates?.filter(x => x.isActive).map(template => <Select.Option key={template.id} value={template.id}>{template.name}</Select.Option>)}
                             </Select>
                         </Form.Item>
                     </Col>

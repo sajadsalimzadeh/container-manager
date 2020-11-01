@@ -14,5 +14,6 @@ namespace Chargoon.ContainerManagement.Domain.Services
         IEnumerable<UserGetDto> GetAll();
         UserGetDto GetById(int id);
         UserGetDto GetOwn();
+        UserGetDto ResetPassword(int id, UserResetPasswordDto dto);
     }
 }

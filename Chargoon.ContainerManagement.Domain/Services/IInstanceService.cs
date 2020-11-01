@@ -17,6 +17,7 @@ namespace Chargoon.ContainerManagement.Domain.Services
         IEnumerable<InstanceGetDto> GetAllByUserId(int userId);
         IEnumerable<InstanceGetDto> GetAllOwn();
         IEnumerable<TemplateCommandExecDto> GetAllOwnCommands(int id);
+        IEnumerable<ContainerListResponse> GetAllOwnContainer(int id);
         IEnumerable<SwarmService> GetAllOwnService(int id);
         IEnumerable<InstanceGetDto> GetByUserId(int id);
         InstanceGetDto GetOwn(int id);

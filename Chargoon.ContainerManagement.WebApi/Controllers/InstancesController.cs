@@ -116,6 +116,7 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
                 {
                     InstanceId = instance.Id,
                     Services = instanceService.GetAllOwnService(instance.Id),
+                    Containers = instanceService.GetAllOwnContainer(instance.Id),
                     TemplateCommandExecs = instanceService.GetAllOwnCommands(instance.Id),
                 };
                 item.Services = item.Services.ToList().ConvertAll(x =>

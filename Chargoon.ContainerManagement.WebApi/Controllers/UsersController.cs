@@ -51,6 +51,12 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
             return new OperationResult<UserGetDto>(userService.Add(dto));
         }
 
+        [HttpPatch("{id:int}/ResetPassword"), Auth("Admin"), Log]
+        public OperationResult<UserGetDto> ResetPassword(int id, [FromBody] UserResetPasswordDto dto)
+        {
+            return new OperationResult<UserGetDto>(userService.ResetPassword(id, dto));
+        }
+
         [HttpPatch("{id:int}/ChangePassword"), Auth("Admin"), Log]
         public OperationResult<UserGetDto> ChangePassword(int id, [FromBody] UserChangePasswordDto dto)
         {

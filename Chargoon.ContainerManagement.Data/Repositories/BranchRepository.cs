@@ -11,9 +11,9 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Data.Repositories
 {
-    public class BranchRepository : BaseCrudRepository<Branch, int>, IBranchRepository
+    public class ImageRepository : BaseCrudRepository<Image, int>, IImageRepository
     {
-        public BranchRepository(IConfiguration configuration) : base(configuration)
+        public ImageRepository(IConfiguration configuration) : base(configuration)
         {
         }
     }

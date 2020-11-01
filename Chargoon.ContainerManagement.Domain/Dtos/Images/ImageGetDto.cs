@@ -3,13 +3,13 @@ using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chargoon.ContainerManagement.Domain.Dtos.Branches
+namespace Chargoon.ContainerManagement.Domain.Dtos.Images
 {
-    public class BranchGetDto
+    public class ImageGetDto
     {
         public int Id { get; set; }
         public string Name { get; set; }
-        public DockerCompose DockerCompose { get; set; }
-        public bool IsBuildEnable { get; set; }
+        public string BuildCron { get; set; }
+        public string BuildPath { get; set; }
     }
 }
