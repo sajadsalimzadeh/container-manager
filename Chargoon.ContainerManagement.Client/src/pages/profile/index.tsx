@@ -64,7 +64,7 @@ export default () => {
                 </Row>
             </Form>
         </div>
-        <Modal title="Change Password" visible={modal === 'change-password'} onCancel={() => setModal('')} footer={null}>
+        <Modal title="Change Password" visible={modal === 'change-password'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <Form className="floating-label" form={changePasswordForm} onFinish={submitChangePassword}>
                 <Row>
                     <Col xs={24}>

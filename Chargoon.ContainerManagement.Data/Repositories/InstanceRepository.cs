@@ -41,6 +41,11 @@ namespace Chargoon.ContainerManagement.Data.Repositories
             return conn.Find<Instance>(s => s.Include<Template>().WithParameters(new { UserId = id }).Where($"{nameof(Instance.UserId):C} = @UserId"));
         }
 
+        public IEnumerable<Instance> GetAllByTemplateId(int id)
+        {
+            return conn.Find<Instance>(s => s.Include<Template>().WithParameters(new { TemplateId = id }).Where($"{nameof(Instance.TemplateId):C} = @TemplateId"));
+        }
+
         public Instance GetByName(string name)
         {
             return conn.Find<Instance>(s => s.Where($"{nameof(Instance.Name):C} = @Name").WithParameters(new { Name = name })).FirstOrDefault();

@@ -6,8 +6,8 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceNetwork
     {
-        public string Aliases { get; set; }
-        public string Ipv4Address { get; set; }
-        public string Ipv6Address { get; set; }
+        public string aliases { get; set; }
+        public string ipv4Address { get; set; }
+        public string ipv6Address { get; set; }
     }
 }

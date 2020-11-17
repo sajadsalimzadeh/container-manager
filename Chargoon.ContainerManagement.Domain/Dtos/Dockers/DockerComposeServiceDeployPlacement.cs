@@ -6,6 +6,6 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceDeployPlacement
     {
-        public int MaxReplicasPerNode { get; set; } = 1;
+        public int maxReplicasPerNode { get; set; } = 1;
     }
 }

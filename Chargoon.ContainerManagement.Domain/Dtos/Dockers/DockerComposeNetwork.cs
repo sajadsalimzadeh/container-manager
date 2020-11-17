@@ -6,6 +6,6 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeNetwork
     {
-        public string Name { get; set; }
+        public string name { get; set; }
     }
 }

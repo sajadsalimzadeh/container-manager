@@ -5,6 +5,7 @@ import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, Input, 
 import useInterval from '@use-it/interval';
 import { useForm } from 'antd/lib/form/Form';
 import useForceUpdate from 'use-force-update';
+import FileSaver from 'file-saver';
 
 declare type Modals = '' | 'change-template' | 'help' | 'command-detail';
 
@@ -18,6 +19,7 @@ export default () => {
     const [selectedInstance, setSelectedInstance] = useState<InstanceGetDto>();
     const [selectedCommand, setSelectedCommand] = useState<TemplateCommandExecDto>();
     const [changeTemplateForm] = useForm();
+    const [isStartInstance, setIsStartInstance] = useState(false);
 
     const [isOnScreen, setIsOnScreen] = useState(true);
     const [isSignalOnLoading, setIsSignalOnLoading] = useState(false);
@@ -40,6 +42,7 @@ export default () => {
     }
 
     const startInstance = (instance: InstanceGetDto) => {
+        setIsStartInstance(true);
         instance.isStarting = true;
         forceUpdate();
         message.info('Starting Instance please wait');
@@ -47,7 +50,7 @@ export default () => {
             if (res.data.success) {
                 instance.isStarting = false;
                 forceUpdate();
-               message.success('Starting instance is in progress please wait');
+                message.success('Starting instance is in progress please wait');
             } else {
                 message.error(res.data.message ?? 'Starting instance failed')
             }
@@ -62,7 +65,7 @@ export default () => {
         forceUpdate();
         Instance_StopOwn(instance.id).then(res => {
             if (res.data.success) {
-               message.success('Stopping instance is in progress please wait');
+                message.success('Stopping instance is in progress please wait');
             } else {
                 message.error(res.data.message ?? 'Stopping instance failed');
             }
@@ -77,7 +80,7 @@ export default () => {
         forceUpdate();
         Instance_RunCommand(instance.id, templateCommand.id).then(res => {
             if (res.data.success) {
-               message.success('Command is running inside container please wait until done');
+                message.success('Command is running inside container please wait until done');
             } else {
                 message.error(res.data.message ?? 'Command running failed');
             }
@@ -108,7 +111,7 @@ export default () => {
                 if (res.data.success) {
                     load();
                     setModal('');
-                   message.success('Change template done successfully')
+                    message.success('Change template done successfully')
                 } else {
                     message.error(res.data.message ?? 'Change template failed')
                 }
@@ -127,13 +130,17 @@ export default () => {
         alert(result.join('\n'));
     }
 
+    const showDescription = (instance: InstanceGetDto) => {
+        alert(instance.template.description);
+    }
+
     const showCommandDetail = (templateCommand: TemplateCommandGetDto, command: TemplateCommandExecDto) => {
         command.templateCommand = templateCommand;
         setSelectedCommand({ ...command, isLoadingLogs: true });
-        setModal('command-detail');
         Docker_GetCommandLog(command.commandId).then(res => {
             if (res.data.success) {
                 command.logs = res.data.data;
+                FileSaver.saveAs(new Blob([res.data.data]), `${templateCommand.serviceName}-${templateCommand.name}-logs.txt`);
             } else {
                 message.error(res.data.message ?? 'Fetch command log failed')
             }
@@ -151,13 +158,33 @@ export default () => {
                         const instance = items.find(x => x.id === signal.instanceId);
                         if (instance) {
                             instance.services = signal.services;
-                            instance.commadns = signal.templateCommandExecs;
+                            instance.commands = signal.templateCommandExecs;
                             instance.containers = signal.containers;
+
+                            if(isStartInstance) isStartupCommandsRuns(instance);
                         }
                     }
                     forceUpdate();
                 }
             }).finally(() => setIsSignalOnLoading(false));
+        }
+    }
+
+    const isStartupCommandsRuns = (instance: InstanceGetDto) => {
+        if (isInstanceAllContainerStarted(instance) && instance.commands) {
+            setIsStartInstance(false);
+            const startups = instance.template.commands.filter(x => x.runOnStartup);
+            for (let i = 0; i < startups.length; i++) {
+                const startup = startups[i];
+                if (instance.commands.findIndex(x => x.templateCommandId === startup.id) < 0) {
+                    instance.commands.push({
+                        commandId: '',
+                        templateCommand: startup,
+                        templateCommandId: startup.id,
+                    });
+                    runCommand(instance, startup);
+                }
+            }
         }
     }
 
@@ -214,8 +241,8 @@ export default () => {
     }
 
     const isCommandRunning = (instance: InstanceGetDto, templateCommand: TemplateCommandGetDto) => {
-        if (!instance.commadns) return false;
-        return instance.commadns.findIndex(x => x.templateCommandId === templateCommand.id && x.inspect?.running) > -1;
+        if (!instance.commands) return false;
+        return instance.commands.findIndex(x => x.templateCommandId === templateCommand.id && x.inspect?.running) > -1;
     }
 
     const getReplacedDockerCompose = (instance: InstanceGetDto): any => {
@@ -237,7 +264,7 @@ export default () => {
 
     }, [items])
 
-    const baseUrl = window.location.protocol + '//' + window.location.hostname;
+    const baseUrl = 'http://docker-srv';
 
     return <div className="page-instances" onMouseEnter={() => setIsOnScreen(true)} onMouseLeave={() => setIsOnScreen(false)}>
         <div className="wrapper">
@@ -249,11 +276,11 @@ export default () => {
             <table className={"custom-table" + (loading ? ' loading' : '')}>
                 <colgroup>
                     <col width="150px" />
-                    <col width="180px" />
+                    <col width="200px" />
                     <col />
                     <col width="100px" />
-                    <col width="250px" />
-                    <col width="320px" />
+                    <col width="300px" />
+                    <col width="400px" />
                 </colgroup>
                 <thead>
                     <tr className="table-head">
@@ -334,7 +361,7 @@ export default () => {
                         </td>
                         <td>
                             <div className="commands">
-                                {instance.commadns?.map((tce, i) => {
+                                {instance.commands?.map((tce, i) => {
                                     const tc = instance.template.commands.find(x => x.id === tce.templateCommandId);
                                     if (!tc || !tce.inspect) return null;
                                     return <button key={i} title={(tce.inspect.exitCode ? `exit code : ${tce.inspect.exitCode}` : '')} onClick={() => showCommandDetail(tc, tce)}>
@@ -357,8 +384,9 @@ export default () => {
                                 {!isInstanceAllContainerStarted(instance) || isInstanceAllContainerStoped(instance) ? <button className="btn btn-success" disabled={instance.isStarting} onClick={() => startInstance(instance)}>{instance.isStarting ? 'Starting...' : 'Start'}</button> : null}
 
                                 <button className="btn btn-primary" onClick={() => showEnvironments(instance)}>ENV</button>
-                                {instance.template?.commands?.length && isInstanceAllContainerStarted(instance) ? <Dropdown overlay={<Menu>
-                                    {instance.template?.commands?.map(templateCommand => {
+                                {instance.template.description ? <button className="btn btn-info" onClick={() => showDescription(instance)}>Description</button> : null}
+                                {instance.template.commands?.length && isInstanceAllContainerStarted(instance) ? <Dropdown overlay={<Menu>
+                                    {instance.template.commands?.map(templateCommand => {
                                         const isRunning = templateCommand.isRunning || isCommandRunning(instance, templateCommand);
                                         return <Menu.Item key={templateCommand.id}>
                                             <button className={"btn btn-" + getCommandCssClass(templateCommand)} disabled={isRunning} onClick={() => runCommand(instance, templateCommand)}>{templateCommand.name}{isRunning ? ' ...' : ''}</button>
@@ -374,12 +402,16 @@ export default () => {
                 </tbody>
             </table>
         </div>
-        <Modal title="Change template and run another network of containers" visible={modal === 'change-template'} onCancel={() => setModal('')} footer={null}>
+        <Modal title="Change template and run another network of containers" visible={modal === 'change-template'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <Form form={changeTemplateForm} onFinish={submitChangeTemplate}>
                 <Row>
                     <Col xs={24}>
                         <Form.Item name="templateId" label="Template">
-                            <Select showSearch allowClear placeholder="Search & Choose Template">
+                            <Select showSearch allowClear placeholder="Search & Choose Template"
+                                filterOption={(input, option) => {
+                                    if (typeof option?.children === 'string') return option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
+                                    return true;
+                                }}>
                                 {templates?.filter(x => x.isActive).map(template => <Select.Option key={template.id} value={template.id}>{template.name}</Select.Option>)}
                             </Select>
                         </Form.Item>
@@ -395,7 +427,7 @@ export default () => {
                 </Row>
             </Form>
         </Modal>
-        <Modal title="Help" visible={modal === 'help'} width="80vw" onCancel={() => setModal('')} footer={null}>
+        <Modal title="Help" visible={modal === 'help'} width="80vw" onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <div className="alert alert-warning rtl" role="alert">
                 <h4 className="alert-heading">راهنمای استفاده از سرویس</h4>
                 <p>برای استفاده از سرویس مدیریت کانتینر های داکر موارد زیر را مطالعه فرمایید</p>
@@ -418,7 +450,7 @@ export default () => {
                 </ul>
             </div>
         </Modal>
-        {selectedCommand ? <Modal title="Command Detail" visible={modal === 'command-detail'} width="600px" onCancel={() => setModal('')} footer={null}>
+        {selectedCommand ? <Modal title="Command Detail" visible={modal === 'command-detail'} width="600px" onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <Row>
                 <Col xs={24}>
                     <Spin tip="Loading..." spinning={selectedCommand.isLoadingLogs}>

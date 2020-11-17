@@ -12,9 +12,14 @@ namespace Chargoon.ContainerManagement.Domain.DataModels
         [Key, DatabaseGenerated(DatabaseGeneratedOption.Identity)]
         public int Id { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
         public string DockerCompose { get; set; }
         public string Environments { get; set; }
         public string InsertCron { get; set; }
+		public string BeforeStartCommand { get; set; }
+		public string AfterStartCommand { get; set; }
+		public string BeforeStopCommand { get; set; }
+		public string AfterStopCommand { get; set; }
         public bool IsActive { get; set; }
 
         public IEnumerable<TemplateCommand> Commands { get; set; }

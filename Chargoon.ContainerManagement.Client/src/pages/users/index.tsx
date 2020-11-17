@@ -95,6 +95,7 @@ export default () => {
         Auth_ChangeUser(id).then(res => {
             if (res.data.success) {
                 history.push('/instances');
+                window.location.reload();
                 Auth_SetLoginInfo(res.data.data);
                message.success('Change user done successfully');
             } else {
@@ -161,7 +162,7 @@ export default () => {
                                 {user.instances.map(instance => <div key={instance.id}>
                                     <span className="badge badge-dark">name: {instance.name}</span>
                                     <span className="badge badge-dark">template: {instance.template?.name}</span>
-                                    <span className="badge badge-dark">port: {instance.environments.BASE_PORT}**</span>
+                                    <span className="badge badge-dark">port: {instance.environments.BASE_PORT}*</span>
                                     <button className="btn badge badge-primary" onClick={() => showEnvironments(instance)}>Environments</button>
                                     <button className="btn badge badge-danger" onClick={() => removeInstance(instance)} disabled={instance.isRemoving}>
                                         {instance.isRemoving ?
@@ -186,7 +187,7 @@ export default () => {
                 </tbody>
             </table>
         </div>
-        <Modal title="User Form" visible={modal === 'add-user'} onCancel={() => setModal('')} footer={null}>
+        <Modal title="User Form" visible={modal === 'add-user'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <Form className="floating-label" onFinish={submitAddUser}>
                 <Row>
                     <Col xs={24}>

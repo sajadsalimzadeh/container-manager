@@ -1,9 +1,4 @@
-using Chargoon.ContainerManagement.Data.Migrations;
-using Chargoon.ContainerManagement.Data.Repositories;
-using Chargoon.ContainerManagement.Domain.Data.Repositories;
 using Chargoon.ContainerManagement.Domain.Models;
-using Chargoon.ContainerManagement.Domain.Services;
-using Chargoon.ContainerManagement.Service;
 using Chargoon.ContainerManagement.WebApi.Helper;
 using Chargoon.ContainerManagement.WebApi.Helpers;
 using Microsoft.AspNetCore.Builder;
@@ -11,13 +6,10 @@ using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
-using Newtonsoft.Json.Serialization;
-using Serilog;
-using Serilog.Events;
 
 namespace Chargoon.ContainerManagement.WebApi
 {
-    public class Startup
+	public class Startup
     {
         public Startup(IConfiguration configuration)
         {
@@ -68,6 +60,7 @@ namespace Chargoon.ContainerManagement.WebApi
             app.UseHttpsRedirection();
 
             app.UseRouting();
+            //app.UseLogger();
 
             app.UseHangfire();
 
@@ -75,7 +68,6 @@ namespace Chargoon.ContainerManagement.WebApi
             app.UseCors(x => x.AllowAnyOrigin().AllowAnyMethod().AllowAnyHeader());
 
             app.UseJsonWebToken();
-            //app.UseLogger();
 
             app.UseEndpoints(endpoints =>
             {

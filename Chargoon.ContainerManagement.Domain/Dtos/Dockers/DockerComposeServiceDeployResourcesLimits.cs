@@ -6,7 +6,7 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceDeployResourcesLimits
     {
-        public string Cpus { get; set; }
-        public string Memory { get; set; }
+        public string cpus { get; set; }
+        public string memory { get; set; }
     }
 }

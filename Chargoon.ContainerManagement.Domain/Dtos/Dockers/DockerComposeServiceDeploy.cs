@@ -6,10 +6,10 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceDeploy
     {
-        public int Replicas { get; set; } = 1;
-        public string Mode { get; set; }
-        public string EndpointMode { get; set; }
-        public DockerComposeServiceDeployPlacement Placement { get; set; }
-        public DockerComposeServiceDeployResources Resources { get; set; }
+        public int replicas { get; set; } = 1;
+        public string mode { get; set; }
+        public string endpointMode { get; set; }
+        public DockerComposeServiceDeployPlacement placement { get; set; }
+        public DockerComposeServiceDeployResources resources { get; set; }
     }
 }

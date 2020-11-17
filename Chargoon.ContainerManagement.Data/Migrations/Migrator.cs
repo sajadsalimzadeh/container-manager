@@ -13,6 +13,8 @@ namespace Chargoon.ContainerManagement.Data.Migrations
         private List<IMigration> migrations = new List<IMigration>()
         {
             new Migration_20201014_Initial(),
+            new Migration_20201106_Command(),
+            new Migration_20201109_Description(),
         };
 
         public Migrator(IConfiguration configuration) : base(configuration)
@@ -53,7 +55,7 @@ namespace Chargoon.ContainerManagement.Data.Migrations
         {
             if (!IsTableExists("__UpdateHistory")) CreateUpdateHistoryTable();
 
-            foreach (var migration in migrations)
+            foreach (var migration in migrations.OrderBy(x => x.GetType().Name))
             {
                 var id = migration.GetType().Name;
                 if (!IsUpdateHistoryExists(id))
@@ -66,9 +68,7 @@ namespace Chargoon.ContainerManagement.Data.Migrations
 
         public void Down()
         {
-            var cloneList = migrations.ToList();
-            cloneList.Reverse();
-            foreach (var migration in cloneList)
+            foreach (var migration in migrations.OrderByDescending(x => x.GetType().Name))
             {
                 var id = migration.GetType().Name;
                 if (IsUpdateHistoryExists(id))

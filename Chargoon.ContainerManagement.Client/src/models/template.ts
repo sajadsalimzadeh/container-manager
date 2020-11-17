@@ -16,6 +16,7 @@ export interface TemplateCommandGetDto {
     name: string;
     serviceName: string;
     color: TemplateCommandColor;
+    runOnStartup: boolean;
 
     isRunning?: boolean;
 }
@@ -23,28 +24,44 @@ export interface TemplateCommandGetDto {
 export interface TemplateGetDto {
     id: number;
     name: string;
-    dockerCompose: string;
-    dockerComposeObj: any;
     environments: any;
-    insertCron: string;
     isActive: boolean;
+    insertCron: string;
+    description: string;
+    dockerComposeObj: any;
+    dockerCompose: string;
+    beforeStartCommand: string;
+    afterStartCommand: string;
+    beforeStoptCommand: string;
+    afterStopCommand: string;
+
     commands: TemplateCommandGetDto[];
 }
 
 export interface TemplateAddDto {
     name: string;
-    dockerCompose: string;
     environments: any;
-    insertCron: string;
     isActive: boolean;
+    insertCron: string;
+    description: string;
+    dockerCompose: string;
+    beforeStartCommand: string;
+    afterStartCommand: string;
+    beforeStoptCommand: string;
+    afterStopCommand: string;
 }
 
 export interface TemplateChangeDto {
     name: string;
-    dockerCompose: string;
     environments: any;
-    insertCron: string;
     isActive: boolean;
+    insertCron: string;
+    description: string;
+    dockerCompose: string;
+    beforeStartCommand: string;
+    afterStartCommand: string;
+    beforeStoptCommand: string;
+    afterStopCommand: string;
 }
 
 export interface TemplateCommandExecDto {

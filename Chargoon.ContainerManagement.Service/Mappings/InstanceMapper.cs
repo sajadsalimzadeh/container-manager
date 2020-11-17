@@ -9,76 +9,85 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Service.Mappings
 {
-    public static class InstanceMapper
-    {
+	public static class InstanceMapper
+	{
 
-        public static InstanceGetDto ToDto(this Instance instance)
-        {
-            var dto = new InstanceGetDto()
-            {
-                Id = instance.Id,
-                Code = instance.Code,
-                Name = instance.Name,
-                UserId = instance.UserId,
-                TemplateId = instance.TemplateId,
+		public static InstanceGetDto ToDto(this Instance instance)
+		{
+			var dto = new InstanceGetDto()
+			{
+				Id = instance.Id,
+				Code = instance.Code,
+				Name = instance.Name,
+				UserId = instance.UserId,
+				TemplateId = instance.TemplateId,
+			};
 
-            };
+			try
+			{
+				dto.Environments = (!string.IsNullOrEmpty(instance.Environments) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(instance.Environments) : new Dictionary<string, string>());
+			}
+			catch { }
 
-            try
-            {
-                dto.Environments = (!string.IsNullOrEmpty(instance.Environments) ? JsonConvert.DeserializeObject<Dictionary<string, string>>(instance.Environments) : new Dictionary<string, string>());
-            }
-            catch { }
+			try
+			{
+				dto.User = (instance.User != null ? instance.User.ToDto() : null);
+			}
+			catch { }
 
-            try
-            {
-                dto.User = (instance.User != null ? instance.User.ToDto() : null);
-            }
-            catch { }
+			try
+			{
+				dto.Template = (instance.Template != null ? instance.Template.ToDto() : null);
+			}
+			catch { }
 
-            try
-            {
-                dto.Template = (instance.Template != null ? instance.Template.ToDto() : null);
-            }
-            catch { }
+			return dto.MergeEnvironments();
+		}
 
-            return dto.MergeEnvironments();
-        }
+		public static IEnumerable<InstanceGetDto> ToDto(this IEnumerable<Instance> instances)
+		{
+			return instances.Select(x => x.ToDto());
+		}
 
-        public static IEnumerable<InstanceGetDto> ToDto(this IEnumerable<Instance> instances)
-        {
-            return instances.Select(x => x.ToDto());
-        }
+		private static InstanceGetDto MergeEnvironments(this InstanceGetDto dto)
+		{
+			var envs = dto.Environments;
+			var basePort = (dto.UserId * 100) + (dto.Code * 10) + 1000;
 
-        private static InstanceGetDto MergeEnvironments(this InstanceGetDto dto)
-        {
-            var envs = dto.Environments;
-            var basePort = (dto.UserId * 1000) + (dto.Code * 100);
+			envs["BASE_PORT"] = (basePort / 10).ToString();
+			envs["CODE"] = dto.Code.ToString();
 
-            envs["BASE_PORT"] = (basePort / 100).ToString();
-            envs["REGISTERY"] = "dockerhub:5001";
-            envs["CODE"] = dto.Code.ToString();
+			if (dto.User != null)
+			{
+				envs["COMPOSE_PROJECT_NAME"] = $"{dto.User.Username}_{dto.Name}";
+				envs["USER"] = dto.User.Username;
+			}
 
-            if (dto.User != null)
-            {
-                envs["COMPOSE_PROJECT_NAME"] = $"{dto.User.Username}_{dto.Name}";
-                envs["USER"] = dto.User.Username;
-            }
+			if (dto.Template != null)
+			{
+				var defaultEnvironments = dto.Template.Environments;
 
-            if (dto.Template != null)
-            {
-                var defaultEnvironments = dto.Template.Environments;
+				foreach (var item in defaultEnvironments)
+				{
+					if (!envs.ContainsKey(item.Key) || string.IsNullOrEmpty(envs[item.Key]))
+					{
+						envs[item.Key] = item.Value;
+					}
+				}
 
-                foreach (var item in defaultEnvironments)
-                {
-                    if (!envs.ContainsKey(item.Key)) envs[item.Key] = item.Value;
-                    else if (string.IsNullOrEmpty(envs[item.Key])) envs[item.Key] = item.Value;
-                }
-
-                envs["TEMPLATE"] = dto.Template.Name;
-            }
-
-            return dto;
-        }
-    }
+				envs["TEMPLATE"] = dto.Template.Name;
+			}
+			dto.Environments = new Dictionary<string, string>();
+			foreach (var env in envs)
+			{
+				var value = env.Value;
+				foreach (var item in envs)
+				{
+					value = value.Replace("{" + item.Key + "}", item.Value);
+				}
+				dto.Environments[env.Key] = value;
+			}
+			return dto;
+		}
+	}
 }

@@ -11,15 +11,16 @@ namespace Chargoon.ContainerManagement.Service.Mappings
 {
     public static class TemplateCommandMapper
     {
-        public static TemplateCommandGetDto ToDto(this TemplateCommand templateCommand)
+        public static TemplateCommandGetDto ToDto(this TemplateCommand model)
         {
             return new TemplateCommandGetDto()
             {
-                Id = templateCommand.Id,
-                Name = templateCommand.Name,
-                Color = templateCommand.Color,
-                TemplateId = templateCommand.TemplateId,
-                ServiceName = templateCommand.ServiceName,
+                Id = model.Id,
+                Name = model.Name,
+                Color = model.Color,
+                RunOnStartup = model.RunOnStartup,
+                TemplateId = model.TemplateId,
+                ServiceName = model.ServiceName,
             };
         }
         public static IEnumerable<TemplateCommandGetDto> ToDto(this IEnumerable<TemplateCommand> templates)

@@ -6,12 +6,14 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeService
     {
-        public string Image { get; set; }
+        public string image { get; set; }
         public DockerComposeServiceDeploy Deploy { get; set; }
-        public IEnumerable<string> Env_File { get; set; }
-        public IEnumerable<string> Environment { get; set; }
-        public IEnumerable<string> Ports { get; set; }
-        public Dictionary<string, DockerComposeServiceNetwork> Networks { get; set; }
-        public IEnumerable<string> Depends_On { get; set; }
+        public IEnumerable<string> env_file { get; set; }
+        public IEnumerable<string> environment { get; set; }
+        public IEnumerable<string> ports { get; set; }
+        public Dictionary<string, DockerComposeServiceNetwork> networks { get; set; }
+        public string restart { get; set; }
+        public IEnumerable<string> depends_on { get; set; }
+        public IEnumerable<string> volumes { get; set; }
     }
 }

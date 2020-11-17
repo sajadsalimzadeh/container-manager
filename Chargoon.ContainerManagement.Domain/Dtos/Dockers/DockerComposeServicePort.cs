@@ -8,10 +8,10 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
     public class DockerComposeServicePort
     {
         [Yaml(IsIgnore = true)]
-        public string Name { get; set; }
-        public string Target { get; set; }
-        public string Published { get; set; }
-        public string Protocol { get; set; }
-        public string Mode { get; set; }
+        public string name { get; set; }
+        public string target { get; set; }
+        public string published { get; set; }
+        public string protocol { get; set; }
+        public string mode { get; set; }
     }
 }

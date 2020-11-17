@@ -17,20 +17,23 @@ namespace Chargoon.ContainerManagement.Service
     public class TemplateService : ITemplateService
     {
         private readonly ITemplateRepository templateRepository;
-        private readonly ITemplateCommandRepository templateCommandRepository;
+		private readonly IInstanceRepository instanceRepository;
+		private readonly ITemplateCommandRepository templateCommandRepository;
 
         public TemplateService(
             ITemplateRepository templateRepository,
+            IInstanceRepository instanceRepository,
             ITemplateCommandRepository templateCommandRepository)
         {
             this.templateRepository = templateRepository;
-            this.templateCommandRepository = templateCommandRepository;
+			this.instanceRepository = instanceRepository;
+			this.templateCommandRepository = templateCommandRepository;
         }
 
         private void ValidateDockerCompose(string dockerCompose)
         {
             if (string.IsNullOrEmpty(dockerCompose)) throw new Exception("docker compose can not be null");
-            var deserializer = new DeserializerBuilder().WithNamingConvention(CamelCaseNamingConvention.Instance).Build();
+            var deserializer = new DeserializerBuilder().Build();
             deserializer.Deserialize<DockerCompose>(dockerCompose);
         }
 
@@ -69,6 +72,7 @@ namespace Chargoon.ContainerManagement.Service
             template.IsActive = true;
             template.InsertCron = null;
             template.Name = ReplaceTime(template.Name);
+            template.Environments = ReplaceTime(template.Environments);
             template.DockerCompose = ReplaceTime(template.DockerCompose);
             template = templateRepository.Insert(template);
             var commands = new List<TemplateCommand>();
@@ -98,6 +102,11 @@ namespace Chargoon.ContainerManagement.Service
             {
                 templateCommandRepository.Delete(command.Id);
             }
+			foreach (var instance in instanceRepository.GetAllByTemplateId(id))
+			{
+                instance.TemplateId = null;
+                instanceRepository.Update(instance);
+			}
             return templateRepository.Delete(id).ToDto();
         }
     }

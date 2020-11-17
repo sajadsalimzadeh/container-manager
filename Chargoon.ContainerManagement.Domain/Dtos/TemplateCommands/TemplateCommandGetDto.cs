@@ -12,5 +12,6 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.TemplateCommands
         public string Name { get; set; }
         public string ServiceName { get; set; }
         public TemplateCommandColor Color { get; set; }
-    }
+		public bool RunOnStartup { get; set; }
+	}
 }

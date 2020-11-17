@@ -7,10 +7,10 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceVolume
     {
-        public DockerComposeServiceVolumeType Type { get; set; } = DockerComposeServiceVolumeType.Volume;
-        public string Raw { get; set; }
-        public string Source { get; set; }
-        public string Target { get; set; }
-        public bool NoCopy { get; set; } = true;
+        public DockerComposeServiceVolumeType type { get; set; } = DockerComposeServiceVolumeType.Volume;
+        public string raw { get; set; }
+        public string source { get; set; }
+        public string target { get; set; }
+        public bool nocopy { get; set; } = true;
     }
 }

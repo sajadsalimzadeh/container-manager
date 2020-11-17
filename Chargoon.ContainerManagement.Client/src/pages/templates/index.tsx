@@ -166,7 +166,7 @@ export default () => {
                 </tbody>
             </table>
         </div>
-        <Modal title="Template Form" visible={modal === 'form'} width="80vw" onCancel={() => setModal('')} footer={null}>
+        <Modal title="Template Form" visible={modal === 'form'} width="80vw" onCancel={() => setModal('')} footer={null} maskClosable={false}>
             <Form className="floating-label" form={form} onFinish={submitForm}>
                 <Row>
                     <Col xs={24} className="p-2">
@@ -182,6 +182,31 @@ export default () => {
                     <Col xs={12} className="p-2">
                         <Form.Item name="environments" label="Environments" rules={[{ required: true }]}>
                             <Input.TextArea placeholder="Environments in multi lines..." rows={12} />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} className="p-2">
+                        <Form.Item name="description" label="Description">
+                            <Input.TextArea rows={7} />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} className="p-2">
+                        <Form.Item name="beforeStartCommand" label="Before Start Command">
+                            <Input />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} className="p-2">
+                        <Form.Item name="afterStartCommand" label="After Start Command">
+                            <Input />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} className="p-2">
+                        <Form.Item name="beforeStopCommand" label="Before Stop Command">
+                            <Input />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24} className="p-2">
+                        <Form.Item name="afterStopCommand" label="After Stop Command">
+                            <Input />
                         </Form.Item>
                     </Col>
                     <Col xs={12} className="p-2">

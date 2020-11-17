@@ -24,7 +24,7 @@ export interface InstanceGetDto {
 
     services?: SwarmService[];
     containers?: ContainerListResponse[];
-    commadns?: TemplateCommandExecDto[];
+    commands?: TemplateCommandExecDto[];
 
     isStarting?: boolean;
     isStopping?: boolean;

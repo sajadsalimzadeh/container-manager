@@ -7,9 +7,9 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceDeployRestartPolicy
     {
-        public DockerComposeCondition Condition { get; set; }
-        public string Deley { get; set; }
-        public int MaxAttemps { get; set; }
-        public string Window { get; set; }
+        public DockerComposeCondition condition { get; set; }
+        public string deley { get; set; }
+        public int maxattemps { get; set; }
+        public string window { get; set; }
     }
 }

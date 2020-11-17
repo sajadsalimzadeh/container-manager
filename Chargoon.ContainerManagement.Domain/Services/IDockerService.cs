@@ -28,7 +28,7 @@ namespace Chargoon.ContainerManagement.Domain.Services
         void RestartContainer(string id);
         bool StartContainer(string id);
         bool StopContainer(string id);
-        void SystemPrune();
+        void SystemPrune(bool all = false);
         void Undeploy(string stackName, string prefix);
         void UnPauseContainer(string id);
         string ExecCommandContainer(string id, string command);
@@ -39,5 +39,7 @@ namespace Chargoon.ContainerManagement.Domain.Services
         void ClearExitedCommands();
         void Build(string dockerCompose);
         IEnumerable<ContainerListResponse> GetAllContainerByPrefix(string prefix);
-    }
+		void ContainerPrune(bool all = false);
+		IEnumerable<NetworkResponse> GetAllNetwork();
+	}
 }

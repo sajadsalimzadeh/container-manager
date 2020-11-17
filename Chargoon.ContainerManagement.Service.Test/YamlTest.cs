@@ -14,12 +14,12 @@ namespace Chargoon.ContainerManagement.Service.Test
         {
             var dc = new DockerCompose();
             var web = new DockerComposeService();
-            web.Image = "nodeapp";
-            web.Ports = new List<string>()
+            web.image = "nodeapp";
+            web.ports = new List<string>()
             {
                 "8090:8080"
             };
-            web.Environment = new List<string>()
+            web.environment = new List<string>()
             {
                 "DEBUG=1",
                 "DATABASE_USERNAME=digah",
@@ -28,7 +28,7 @@ namespace Chargoon.ContainerManagement.Service.Test
                 "COMPOSE_PROJECT_NAME=sajadsalimzadeh_test",
                 "BUILDVERSION=2020.10.25",
             };
-            dc.Services = new Dictionary<string, DockerComposeService>()
+            dc.services = new Dictionary<string, DockerComposeService>()
             {
                 { "web", web }
             };

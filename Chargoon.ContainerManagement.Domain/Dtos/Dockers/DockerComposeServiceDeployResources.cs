@@ -6,7 +6,7 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeServiceDeployResources
     {
-        public DockerComposeServiceDeployResourcesLimits Limits { get; set; }
-        public DockerComposeServiceDeployResourcesReservations Reservations { get; set; }
+        public DockerComposeServiceDeployResourcesLimits limits { get; set; }
+        public DockerComposeServiceDeployResourcesReservations reservations { get; set; }
     }
 }

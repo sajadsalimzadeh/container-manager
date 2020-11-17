@@ -2,11 +2,12 @@ namespace Chargoon.ContainerManagement.Domain.Models
 {
     public class AppSettings
     {
-        public AppSettingsDocker Docker { get; set; }
-        public AppSettingsIdentity Identity { get; set; }
-        public AppSettingsHangfire Hangfire { get; set; }
-        public AppSettingsLogging Logging { get; set; }
-    }
+        public AppSettingsDocker Docker { get; set; } = new AppSettingsDocker();
+        public AppSettingsIdentity Identity { get; set; } = new AppSettingsIdentity();
+        public AppSettingsHangfire Hangfire { get; set; } = new AppSettingsHangfire();
+        public AppSettingsLogging Logging { get; set; } = new AppSettingsLogging();
+        public AppSettingsImage Image { get; set; } = new AppSettingsImage();
+	}
 
     public class AppSettingsDocker
     {
@@ -22,14 +23,19 @@ namespace Chargoon.ContainerManagement.Domain.Models
     {
         public string DockerSystemPruneCron { get; set; } = "*/10 * * * *";
         public string DockerClearExitedCommandCacheCron { get; set; } = "1 * * * *";
-        public string ClearLogCron { get; set; } = "1 * * * *";
-        public string DidgahBuildCron { get; set; } = "0 5 * * *";
+        public string ClearLogCron { get; set; } = "0 0 * * *";
+		public string ClearImageBuildLogCron { get; set; } = "0 0 * * *";
     }
 
     public class AppSettingsIdentity
     {
         public string Secret { get; set; }
         public int Timeout { get; set; } = 30; //Minutes
+    }
+
+    public class AppSettingsImage
+    {
+        public int BuildLogLifetime { get; set; } = 7; //Day
     }
 
     public class AppSettingsLogging

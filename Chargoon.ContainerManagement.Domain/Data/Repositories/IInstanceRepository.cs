@@ -10,5 +10,6 @@ namespace Chargoon.ContainerManagement.Domain.Data.Repositories
     {
         Instance GetByName(string name);
         IEnumerable<Instance> GetAllByUserId(int id);
-    }
+		IEnumerable<Instance> GetAllByTemplateId(int id);
+	}
 }

@@ -30,11 +30,11 @@ namespace Chargoon.ContainerManagement.Service
         private UserGetDto User { get { return httpContextAccessor?.HttpContext?.Items["User"] as UserGetDto; } }
 
         public LoggerService(
-            ILoggerFactory loggerFactory,
+            ILoggerProvider loggerProvider,
             IOptions<AppSettings> appSettings,
             IHttpContextAccessor httpContextAccessor)
         {
-            logger = loggerFactory.CreateLogger(nameof(LoggerService));
+            this.logger = loggerProvider.CreateLogger(GetType().Name);
             this.appSettings = appSettings.Value;
             this.httpContextAccessor = httpContextAccessor;
         }

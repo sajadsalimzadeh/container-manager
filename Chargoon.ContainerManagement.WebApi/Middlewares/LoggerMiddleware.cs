@@ -20,6 +20,7 @@ namespace Chargoon.ContainerManagement.WebApi.Middleware
             _next = next;
             this.logger = logger;
         }
+
         public async Task Invoke(HttpContext context)
         {
             var request = context.Request;

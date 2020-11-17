@@ -16,5 +16,6 @@ namespace Chargoon.ContainerManagement.Domain.Services
         Stream GetBuildLog(int imageId, string buildname, string filename);
         IEnumerable<ImageBuildLogDto> GetAllBuildLog(int imageId);
         ImageGetDto Remove(int id);
-    }
+		void ClearBuildLogBefore(DateTime datetime);
+	}
 }

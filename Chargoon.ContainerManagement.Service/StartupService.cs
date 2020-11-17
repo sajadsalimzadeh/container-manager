@@ -21,17 +21,6 @@ namespace Chargoon.ContainerManagement.Service
 
         public void RunAsync()
         {
-            var dc = new DockerCompose();
-            dc.Version = "3.8";
-            dc.Services = new Dictionary<string, DockerComposeService>()
-            {
-                {
-                    "nodeApp1", new DockerComposeService()
-                    {
-
-                    }
-                }
-            };
 
         }
     }

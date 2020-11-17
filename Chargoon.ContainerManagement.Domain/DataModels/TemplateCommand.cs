@@ -17,7 +17,9 @@ namespace Chargoon.ContainerManagement.Domain.DataModels
         public string Name { get; set; }
         public string ServiceName { get; set; }
         public string Command { get; set; }
-        public TemplateCommandColor Color { get; set; }
-        public Template Template { get; set; }
+        public TemplateCommandColor Color { get; set; } = TemplateCommandColor.None;
+        public bool RunOnStartup { get; set; } = false;
+
+		public Template Template { get; set; }
     }
 }

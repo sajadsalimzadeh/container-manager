@@ -6,6 +6,6 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Dockers
 {
     public class DockerComposeVolume
     {
-        public string Name { get; set; }
+        public string name { get; set; }
     }
 }

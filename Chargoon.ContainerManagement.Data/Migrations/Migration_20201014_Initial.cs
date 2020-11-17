@@ -55,6 +55,7 @@ namespace Chargoon.ContainerManagement.Data.Migrations
                     ServiceName VARCHAR(64) NOT NULL,
                     Command NVARCHAR(MAX) NOT NULL,
                     Color TINYINT NOT NULL DEFAULT 0,
+                    RunOnStartup BIT NOT NULL DEFAULT 0,
                     CONSTRAINT FK_TemplateCommand_Template FOREIGN KEY (TemplateId) REFERENCES [Template] (Id)
                 )
             ");

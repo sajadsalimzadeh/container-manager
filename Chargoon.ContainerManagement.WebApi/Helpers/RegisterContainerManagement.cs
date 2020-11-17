@@ -28,11 +28,11 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
             services.AddScoped<IUserService, UserService>();
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IDockerService, DockerService>();
+            services.AddScoped<ICommandService, CommandService>();
             services.AddScoped<IInstanceService, InstanceService>();
             services.AddScoped<ITemplateService, TemplateService>();
             services.AddScoped<IAuthenticationService, AuthenticationService>();
             services.AddScoped<ITemplateCommandService, TemplateCommandService>();
-
 
             var configuration = services.BuildServiceProvider().GetService<IConfiguration>();
 
