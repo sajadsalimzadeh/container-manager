@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { InstanceGetDto, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto } from '../../models';
-import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal } from '../../services';
-import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, message } from 'antd';
+import { InstanceGetDto, CustomeNightlyBuildLog, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto } from '../../models';
+import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal, Custome_GetNightlyBuildLogs, Custome_GetNightlyBuildLogDownloadPath } from '../../services';
+import { Modal, Col, Row, Form, Button, Tooltip, Dropdown, Menu, message } from 'antd';
 import useInterval from '@use-it/interval';
-import { useForm } from 'antd/lib/form/Form';
 import useForceUpdate from 'use-force-update';
 import FileSaver from 'file-saver';
+import Cascader, { CascaderOptionType } from 'antd/lib/cascader';
 
 declare type Modals = '' | 'change-template' | 'help';
 
@@ -17,12 +17,14 @@ export default () => {
     const [items, setItems] = useState<InstanceGetDto[]>([]);
     const [templates, setTemplates] = useState<TemplateGetDto[]>([]);
     const [selectedInstance, setSelectedInstance] = useState<InstanceGetDto>();
-    const [changeTemplateForm] = useForm();
     const [isFormLoading, setIsFormLoading] = useState(false);
     const [isStartInstance, setIsStartInstance] = useState(false);
 
     const [isOnScreen, setIsOnScreen] = useState(true);
     const [isSignalOnLoading, setIsSignalOnLoading] = useState(false);
+
+    const [selectedTemplate, setSelectedTemplate] = useState<TemplateGetDto>();
+    const [nightlyBuildLogs, setNightlyBuildLogs] = useState<CustomeNightlyBuildLog[]>([])
 
     const forceUpdate = useForceUpdate();
 
@@ -93,7 +95,7 @@ export default () => {
     const changeTemplate = (instance: InstanceGetDto) => {
         setSelectedInstance(instance);
         setModal('change-template');
-        changeTemplateForm.setFieldsValue({ templateId: instance.templateId });
+        setSelectedTemplate(instance.template);
         setIsFormLoading(true);
         Template_GetAll().then(res => {
             if (res.data.success) {
@@ -104,10 +106,10 @@ export default () => {
         }).finally(() => setIsFormLoading(false))
     }
 
-    const submitChangeTemplate = (values: { templateId: number }) => {
+    const submitChangeTemplate = () => {
         if (selectedInstance) {
             setIsFormLoading(true);
-            Instance_ChangeOwnTemplate(selectedInstance.id, { templateId: values.templateId }).then(res => {
+            Instance_ChangeOwnTemplate(selectedInstance.id, { templateId: selectedTemplate?.id }).then(res => {
                 if (res.data.success) {
                     load();
                     setModal('');
@@ -252,14 +254,82 @@ export default () => {
         }
     }
 
+    const getTemplateCascaderOptions = (): CascaderOptionType[] => {
+        const templateCascaderItems: CascaderOptionType[] = [];
+        const wordRegex = new RegExp(/^\w*[.-]/);
+        const filtered = templates.filter(x => x.isActive);
+        for (let i = 0; i < filtered.length; i++) {
+            const template = filtered[i];
+            const wordMatches = wordRegex.exec(template.name);
+            if (wordMatches?.length) {
+                const match = wordMatches[0];
+                const matchLabel = match.substr(0, match.length - 1);
+                const item = templateCascaderItems.find(x => x.label === matchLabel);
+                if (item) {
+                    item.children?.push({
+                        value: template.id.toString(),
+                        label: template.name.replace(match, '')
+                    })
+                } else {
+                    templateCascaderItems.push({
+                        value: 'root-' + template.id,
+                        label: matchLabel,
+                        children: [
+                            {
+                                value: template.id.toString(),
+                                label: template.name.replace(match, '')
+                            }
+                        ]
+                    })
+                }
+            }
+        }
+        return templateCascaderItems;
+    }
+
+    const getTemplateCascaderOptionsValue = (items: CascaderOptionType[], value: string) => {
+        let result: string[] = [];
+        for (let i = 0; i < items.length; i++) {
+            const item = items[i];
+            if (item.children) {
+                const childResult = getTemplateCascaderOptionsValue(item.children, value);
+                if (childResult.length) {
+                    if (item.value) result.push(item.value.toString());
+                    result = result.concat(childResult);
+                    return result;
+                }
+            } else if (item.value === value) {
+                result.push(item.value.toString());
+            }
+        }
+        return result;
+    }
+
     useEffect(() => {
         load();
     }, []);
 
     useEffect(() => {
 
-    }, [items])
+    }, [items]);
 
+    useEffect(() => {
+        setNightlyBuildLogs([]);
+        if (!selectedTemplate) return;
+        const branchRegex = new RegExp(/(RC)|(Release)|(R[0-9]{2}\w[0-9]{2})/);
+        const branchMatches = branchRegex.exec(selectedTemplate.name);
+        const dateRegex = new RegExp(/[0-9]{4}.[0-9]{2}.[0-9]{2}/);
+        const dateMatches = dateRegex.exec(selectedTemplate.name);
+        if (branchMatches?.length && dateMatches?.length) {
+            Custome_GetNightlyBuildLogs(branchMatches[0], dateMatches[0]).then(res => {
+                if (res.data.success) {
+                    setNightlyBuildLogs(res.data.data);
+                }
+            })
+        }
+    }, [selectedTemplate]);
+
+    const templateCascaderItems = getTemplateCascaderOptions();
     const baseUrl = 'http://docker-srv';
 
     return <div className="page-instances" onMouseEnter={() => setIsOnScreen(true)} onMouseLeave={() => setIsOnScreen(false)}>
@@ -297,7 +367,6 @@ export default () => {
                         <td>
                             <div className="ports">
                                 {instance.services?.map((service, i) => {
-                                    let dockerComposeService: any;
                                     let dockerComposeServiceName: any;
                                     try {
                                         const dockerCompose = getReplacedDockerCompose(instance);
@@ -305,7 +374,6 @@ export default () => {
                                         for (let k = 0; k < serviceNames.length; k++) {
                                             const serviceName = serviceNames[k];
                                             if (service.spec.name.toLowerCase().endsWith(serviceName.toLowerCase())) {
-                                                dockerComposeService = dockerCompose.services[serviceName];
                                                 dockerComposeServiceName = serviceName;
                                                 break;
                                             }
@@ -329,12 +397,12 @@ export default () => {
                                                 const value = instance.environments[key];
                                                 if (value?.toString() === port?.publishedPort?.toString()) {
                                                     portname = key
-                                                    .replace('EXPOSED_', '')
-                                                    .replace('_EXPOSED', '')
-                                                    .replace('EXPOSED', '')
-                                                    .replace('_PORT', '')
-                                                    .replace('PORT_', '')
-                                                    .replace('PORT', '');
+                                                        .replace('EXPOSED_', '')
+                                                        .replace('_EXPOSED', '')
+                                                        .replace('EXPOSED', '')
+                                                        .replace('_PORT', '')
+                                                        .replace('PORT_', '')
+                                                        .replace('PORT', '');
                                                 }
                                             }
 
@@ -415,19 +483,19 @@ export default () => {
                 </tbody>
             </table>
         </div>
-        <Modal title="Change template and run another network of containers" visible={modal === 'change-template'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
-            <Form className={(isFormLoading ? ' loading' : '')} form={changeTemplateForm} onFinish={submitChangeTemplate}>
+        <Modal className="change-template-modal" title="Change template and run another network of containers" visible={modal === 'change-template'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
+            <Form className={(isFormLoading ? ' loading' : '')} onFinish={submitChangeTemplate}>
                 <Row>
                     <Col xs={24}>
-                        <Form.Item name="templateId" label="Template">
-                            <Select showSearch allowClear placeholder="Search & Choose Template"
-                                filterOption={(input, option) => {
-                                    if (typeof option?.children === 'string') return option?.children.toLowerCase().indexOf(input.toLowerCase()) >= 0;
-                                    return true;
-                                }}>
-                                {templates?.filter(x => x.isActive).map(template => <Select.Option key={template.id} value={template.id}>{template.name}</Select.Option>)}
-                            </Select>
-                        </Form.Item>
+                        <Cascader
+                            options={templateCascaderItems}
+                            showSearch
+                            allowClear
+                            placeholder="Search & Choose Template"
+                            value={(selectedTemplate ? getTemplateCascaderOptionsValue(templateCascaderItems, selectedTemplate.id.toString()) : undefined)}
+                            onChange={e => {
+                                setSelectedTemplate(e.length === 2 ? templates.find(x => x.id === +e[1]) : undefined);
+                            }} />
                     </Col>
                 </Row>
                 <Row>
@@ -438,6 +506,14 @@ export default () => {
                         <Button type="primary" htmlType="button" block onClick={() => setModal('')} danger>Close</Button>
                     </Col>
                 </Row>
+                {nightlyBuildLogs?.length ? <div>
+                    <h2>Nightly Build Logs</h2>
+                    <ul>
+                        {nightlyBuildLogs.map(x => <li>
+                            <a href={Custome_GetNightlyBuildLogDownloadPath(x.branch, x.date, x.name)} target="_blank" rel="noopener noreferrer">{x.name}</a>
+                        </li>)}
+                    </ul>
+                </div> : null}
             </Form>
         </Modal>
         <Modal title="Help" visible={modal === 'help'} width="80vw" onCancel={() => setModal('')} footer={null} maskClosable={false}>

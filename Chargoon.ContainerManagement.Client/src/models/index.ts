@@ -4,6 +4,7 @@ export * from './image';
 export * from './instance';
 export * from './template';
 export * from './user';
+export * from './custome';
 
 export interface OperationResult<T = any> {
     data: T;

@@ -74,11 +74,11 @@ namespace Chargoon.ContainerManagement.Service
             template.Name = ReplaceTime(template.Name);
             template.Environments = ReplaceTime(template.Environments);
             template.DockerCompose = ReplaceTime(template.DockerCompose);
-            template = templateRepository.Insert(template);
             if(template.InsertLifeTime.HasValue && template.InsertLifeTime.Value > 0)
 			{
                 template.ExpireTime = DateTime.Now.AddDays(template.InsertLifeTime.Value);
 			}
+            template = templateRepository.Insert(template);
             var commands = new List<TemplateCommand>();
             foreach (var templateCommand in templateCommandRepository.GetAllByTemplateId(templateId))
             {

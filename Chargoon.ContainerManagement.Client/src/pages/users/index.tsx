@@ -127,7 +127,7 @@ export default () => {
 
     const roles = ["Admin", "User"]
 
-    return <div className={"page-users" + (loading ? ' loading' : '')}>
+    return <div className="page-users">
         <div className="wrapper">
             <div className="title-bar">
                 <h4>Users</h4>
@@ -135,7 +135,7 @@ export default () => {
                 <button className="btn btn-success" onClick={() => setModal('add-user')}>Add New User</button>
                 <Input placeholder="Search by username ..." value={searchValue} onChange={e => setSearchValue(e.target.value)}/>
             </div>
-            <table className="custom-table">
+            <table className={"custom-table" + (loading ? ' loading' : '')}>
                 <colgroup>
                     <col width="70px" />
                     <col width="120px" />

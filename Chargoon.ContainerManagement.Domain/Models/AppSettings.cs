@@ -7,7 +7,13 @@ namespace Chargoon.ContainerManagement.Domain.Models
         public AppSettingsHangfire Hangfire { get; set; } = new AppSettingsHangfire();
         public AppSettingsLogging Logging { get; set; } = new AppSettingsLogging();
         public AppSettingsImage Image { get; set; } = new AppSettingsImage();
-	}
+        public AppSettingsCustome Custome { get; set; } = new AppSettingsCustome();
+    }
+
+    public class AppSettingsCustome
+    {
+        public string DevelopmentPackPath { get; set; }
+    }
 
     public class AppSettingsDocker
     {

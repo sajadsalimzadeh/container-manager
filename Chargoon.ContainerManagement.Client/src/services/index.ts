@@ -20,7 +20,8 @@ import {
   ImageGetDto,
   ImageAddDto,
   ImageChangeDto,
-  ImageBuildLogDto
+  ImageBuildLogDto,
+  CustomeNightlyBuildLog
 } from "../models";
 import Cookies from 'js-cookie';
 
@@ -119,3 +120,7 @@ export function Template_Add(dto: TemplateAddDto) { return axios.post<OperationR
 export function Template_Dupplicate(id: number) { return axios.put<OperationResult<TemplateGetDto>>(`Templates/${id}/Dupplicate`, {}); }
 export function Template_Change(id: number, dto: TemplateChangeDto) { return axios.patch<OperationResult<TemplateGetDto>>(`Templates/${id}`, dto); }
 export function Template_Remove(id: number) { return axios.delete<OperationResult<TemplateGetDto>>(`Templates/${id}`); }
+
+
+export function Custome_GetNightlyBuildLogs(branch: string, date: string) { return axios.get<OperationResult<CustomeNightlyBuildLog[]>>(`Custome/NightlyBuildLogs/${branch}/${date}`); }
+export function Custome_GetNightlyBuildLogDownloadPath(branch: string, date: string, filename: string) { return config.baseURL + `Custome/NightlyBuildLogs/${branch}/${date.substr(0, 10)}/${filename}`; }

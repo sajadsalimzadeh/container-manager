@@ -2,6 +2,7 @@
     width: 100vw;
     height: 100vh;
     display: flex;
+    position: fixed;
     flex-direction: column;
 
     >nav {
@@ -49,6 +50,7 @@
     >main {
         flex: 1;
         display: flex;
+        overflow: auto;
         padding-top: 70px;
         flex-direction: column;
         background: linear-gradient(45deg, #4158d0, #c850c0);
@@ -56,6 +58,10 @@
         >* {
             flex: 1;
         }
+
+        &::-webkit-scrollbar {
+            width: 8px;
+          }
     }
 
     >footer {}

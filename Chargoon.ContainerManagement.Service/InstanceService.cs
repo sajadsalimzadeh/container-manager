@@ -1,24 +1,18 @@
 ﻿using Chargoon.ContainerManagement.Domain.Data.Repositories;
 using Chargoon.ContainerManagement.Domain.DataModels;
-using Chargoon.ContainerManagement.Domain.Dtos.Dockers;
 using Chargoon.ContainerManagement.Domain.Dtos.Instances;
 using Chargoon.ContainerManagement.Domain.Dtos.TemplateCommands;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service.Mappings;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Caching.Memory;
-using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
-using System.Text;
-using YamlDotNet.Serialization;
-using YamlDotNet.Serialization.NamingConventions;
 
 namespace Chargoon.ContainerManagement.Service
 {
-	public class InstanceService : IInstanceService
+    public class InstanceService : IInstanceService
 	{
 		private readonly IInstanceRepository instanceRepository;
 		private readonly IDockerService dockerService;

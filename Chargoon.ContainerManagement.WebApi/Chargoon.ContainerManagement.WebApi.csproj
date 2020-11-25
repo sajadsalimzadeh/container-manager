@@ -22,5 +22,9 @@
     <ProjectReference Include="..\Chargoon.ContainerManagement.Service\Chargoon.ContainerManagement.Service.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Models\" />
+  </ItemGroup>
+
 
 </Project>

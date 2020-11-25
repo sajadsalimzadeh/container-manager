@@ -29,6 +29,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
             services.AddScoped<IImageService, ImageService>();
             services.AddScoped<IDockerService, DockerService>();
             services.AddScoped<ICommandService, CommandService>();
+            services.AddScoped<ICustomService, CustomService>();
             services.AddScoped<IInstanceService, InstanceService>();
             services.AddScoped<ITemplateService, TemplateService>();
             services.AddScoped<IAuthenticationService, AuthenticationService>();

@@ -37,7 +37,7 @@ export interface InstanceAddDto {
 }
 
 export interface InstanceChangeTemplateDto {
-    templateId: number;
+    templateId?: number;
 }
 
 export interface InstanceRunCommandDto {
