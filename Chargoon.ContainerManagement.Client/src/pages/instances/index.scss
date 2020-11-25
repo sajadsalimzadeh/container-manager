@@ -4,22 +4,44 @@
     align-items: center;
     flex-direction: column;
 
+    table {
+        white-space: nowrap;
+    }
+
     >.wrapper {
         width: 80vw !important;
+        min-height: calc(100vh - 70px);
+        overflow-y: visible;
+        overflow-x: auto;
+
+        @media screen and (max-width: 1300px) {
+            width: 90vw !important;
+        }
+
+        @media screen and (max-width: 998px) {
+            width: 100vw !important;
+            padding: 0 2vw;
+        }
     }
 
     .ports {
         display: flex;
-        flex-wrap: wrap;
-        >* {
-            width: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
+        flex-direction: column;
+        align-items: flex-start;
 
+        .service {
+            width: 100%;
 
-            @media screen and (max-width: 1600px) {
-                width: 100% !important;
+            .port {
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+
+                .name,
+                .value {
+                    text-align: left;
+                }
             }
         }
     }
@@ -27,6 +49,10 @@
     .commands {
         display: flex;
         flex-direction: column;
+
+        @media screen and (max-width: 1600px) {
+            font-size: 12px;
+        }
 
         >button {
             border: none;
@@ -40,6 +66,7 @@
             >* {
                 margin: 0 5px;
             }
+
             .spinner-border {
                 width: 16px !important;
                 height: 16px !important;

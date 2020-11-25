@@ -41,5 +41,6 @@ namespace Chargoon.ContainerManagement.Domain.Services
         IEnumerable<ContainerListResponse> GetAllContainerByPrefix(string prefix);
 		void ContainerPrune(bool all = false);
 		IEnumerable<NetworkResponse> GetAllNetwork();
+		void RemoveImage(string name);
 	}
 }

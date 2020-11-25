@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Checkbox, Col, Form, Input, message, Modal, Popconfirm, Row } from 'antd';
+import { Button, Checkbox, Col, Form, Input, InputNumber, message, Modal, Popconfirm, Row } from 'antd';
 import { TemplateGetDto } from '../../models';
 import { Template_Add, Template_Change, Template_Dupplicate, Template_GetAll, Template_Remove } from '../../services';
 import { useForm } from 'antd/lib/form/Form';
@@ -14,6 +14,7 @@ export default () => {
     const [loading, setLoading] = useState(false);
     const [items, setItems] = useState<TemplateGetDto[]>([]);
     const [searchValue, setSearchValue] = useState('');
+    const [isFormLoading, setIsFormLoading] = useState(false);
 
     const [form] = useForm();
 
@@ -45,6 +46,7 @@ export default () => {
         }
 
         if (id) {
+            setIsFormLoading(true);
             Template_Change(id, values).then(res => {
                 if (res.data.success) {
                     load();
@@ -53,8 +55,9 @@ export default () => {
                 } else {
                     message.error(res.data.message ?? 'Edit template failed');
                 }
-            });
+            }).finally(() => setIsFormLoading(false));
         } else {
+            setIsFormLoading(true)
             Template_Add(values).then(res => {
                 if (res.data.success) {
                     load();
@@ -63,7 +66,7 @@ export default () => {
                 } else {
                     message.error(res.data.message ?? 'Add template failed');
                 }
-            });
+            }).finally(() => setIsFormLoading(false));
         }
     }
 
@@ -129,8 +132,10 @@ export default () => {
                 <colgroup>
                     <col width="70px" />
                     <col width="200px" />
-                    <col width="200px" />
                     <col width="" />
+                    <col width="200px" />
+                    <col width="200px" />
+                    <col width="200px" />
                     <col width="80px" />
                     <col width="270px" />
                 </colgroup>
@@ -138,8 +143,10 @@ export default () => {
                     <tr className="table-head">
                         <th>Id</th>
                         <th>Name</th>
-                        <th>Insert Cron</th>
                         <th></th>
+                        <th>Insert Cron</th>
+                        <th>Insert Life Time</th>
+                        <th>Expire Time</th>
                         <th>Is Active</th>
                         <th>Actions</th>
                     </tr>
@@ -148,8 +155,10 @@ export default () => {
                     {items.filter(x => x.name.toLowerCase().indexOf(searchValue.toLowerCase()) > -1).map(template => <tr key={template.id}>
                         <td>{template.id}</td>
                         <td>{template.name}</td>
-                        <td>{template.insertCron}</td>
                         <td></td>
+                        <td>{template.insertCron}</td>
+                        <td>{template.insertLifeTime}</td>
+                        <td>{template.expireTime}</td>
                         <td><Checkbox disabled checked={template.isActive}></Checkbox></td>
                         <td>
                             <div className="actions">
@@ -167,7 +176,7 @@ export default () => {
             </table>
         </div>
         <Modal title="Template Form" visible={modal === 'form'} width="80vw" onCancel={() => setModal('')} footer={null} maskClosable={false}>
-            <Form className="floating-label" form={form} onFinish={submitForm}>
+            <Form className={"floating-label" + (isFormLoading ? ' loading' : '')} form={form} onFinish={submitForm}>
                 <Row>
                     <Col xs={24} className="p-2">
                         <Form.Item name="name" label="Name" rules={[{ required: true }]}>
@@ -212,6 +221,16 @@ export default () => {
                     <Col xs={12} className="p-2">
                         <Form.Item name="insertCron" label="Insert Cron">
                             <Input placeholder="0 6 * * *" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={12} className="p-2">
+                        <Form.Item name="insertLifeTime" label="Insert Life Time">
+                            <InputNumber placeholder="day" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={12} className="p-2">
+                        <Form.Item name="expireTime" label="Expire Time">
+                            <Input placeholder="" />
                         </Form.Item>
                     </Col>
                     <Col xs={12} className="p-2">

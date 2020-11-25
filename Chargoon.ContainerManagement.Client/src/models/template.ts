@@ -27,6 +27,8 @@ export interface TemplateGetDto {
     environments: any;
     isActive: boolean;
     insertCron: string;
+    insertLifeTime: number;
+    expireTime: string;
     description: string;
     dockerComposeObj: any;
     dockerCompose: string;
@@ -43,6 +45,8 @@ export interface TemplateAddDto {
     environments: any;
     isActive: boolean;
     insertCron: string;
+    insertLifeTime: number;
+    expireTime: string;
     description: string;
     dockerCompose: string;
     beforeStartCommand: string;
@@ -56,6 +60,8 @@ export interface TemplateChangeDto {
     environments: any;
     isActive: boolean;
     insertCron: string;
+    insertLifeTime: number;
+    expireTime: string;
     description: string;
     dockerCompose: string;
     beforeStartCommand: string;

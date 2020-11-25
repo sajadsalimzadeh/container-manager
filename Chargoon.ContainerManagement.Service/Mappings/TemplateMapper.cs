@@ -25,6 +25,8 @@ namespace Chargoon.ContainerManagement.Service.Mappings
 				InsertCron = model.InsertCron,
 				Description = model.Description,
 				DockerCompose = model.DockerCompose,
+				InsertLifeTime = model.InsertLifeTime,
+				ExpireTime = model.ExpireTime,
 
 				BeforeStartCommand = model.BeforeStartCommand,
 				AfterStartCommand = model.AfterStartCommand,
@@ -68,6 +70,8 @@ namespace Chargoon.ContainerManagement.Service.Mappings
 				AfterStartCommand = dto.AfterStartCommand,
 				BeforeStopCommand = dto.BeforeStopCommand,
 				AfterStopCommand = dto.AfterStopCommand,
+				InsertLifeTime = dto.InsertLifeTime,
+				ExpireTime = dto.ExpireTime,
 				Environments = (dto.Environments != null ? JsonConvert.SerializeObject(dto.Environments) : null)
 			};
 		}
@@ -83,6 +87,8 @@ namespace Chargoon.ContainerManagement.Service.Mappings
 			model.AfterStartCommand = dto.AfterStartCommand;
 			model.BeforeStopCommand = dto.BeforeStopCommand;
 			model.AfterStopCommand = dto.AfterStopCommand;
+			model.InsertLifeTime = dto.InsertLifeTime;
+			model.ExpireTime = dto.ExpireTime;
 			model.Environments = (dto.Environments != null ? JsonConvert.SerializeObject(dto.Environments) : null);
 			return model;
 		}

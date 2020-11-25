@@ -25,7 +25,8 @@ namespace Chargoon.ContainerManagement.Domain.Models
         public string DockerClearExitedCommandCacheCron { get; set; } = "1 * * * *";
         public string ClearLogCron { get; set; } = "0 0 * * *";
 		public string ClearImageBuildLogCron { get; set; } = "0 0 * * *";
-    }
+        public string RemoveExpiredTemplateCron { get; set; } = "0 0 * * *";
+	}
 
     public class AppSettingsIdentity
     {

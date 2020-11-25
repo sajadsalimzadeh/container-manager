@@ -1,13 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { InstanceGetDto, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto } from '../../models';
 import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal } from '../../services';
-import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, Input, Spin, message } from 'antd';
+import { Modal, Col, Row, Select, Form, Button, Tooltip, Dropdown, Menu, message } from 'antd';
 import useInterval from '@use-it/interval';
 import { useForm } from 'antd/lib/form/Form';
 import useForceUpdate from 'use-force-update';
 import FileSaver from 'file-saver';
 
-declare type Modals = '' | 'change-template' | 'help' | 'command-detail';
+declare type Modals = '' | 'change-template' | 'help';
 
 
 export default () => {
@@ -17,8 +17,8 @@ export default () => {
     const [items, setItems] = useState<InstanceGetDto[]>([]);
     const [templates, setTemplates] = useState<TemplateGetDto[]>([]);
     const [selectedInstance, setSelectedInstance] = useState<InstanceGetDto>();
-    const [selectedCommand, setSelectedCommand] = useState<TemplateCommandExecDto>();
     const [changeTemplateForm] = useForm();
+    const [isFormLoading, setIsFormLoading] = useState(false);
     const [isStartInstance, setIsStartInstance] = useState(false);
 
     const [isOnScreen, setIsOnScreen] = useState(true);
@@ -94,19 +94,19 @@ export default () => {
         setSelectedInstance(instance);
         setModal('change-template');
         changeTemplateForm.setFieldsValue({ templateId: instance.templateId });
+        setIsFormLoading(true);
         Template_GetAll().then(res => {
             if (res.data.success) {
                 setTemplates(res.data.data);
             } else {
                 message.error(res.data.message ?? 'Fetch templates failed')
             }
-        }).finally(() => {
-
-        })
+        }).finally(() => setIsFormLoading(false))
     }
 
     const submitChangeTemplate = (values: { templateId: number }) => {
         if (selectedInstance) {
+            setIsFormLoading(true);
             Instance_ChangeOwnTemplate(selectedInstance.id, { templateId: values.templateId }).then(res => {
                 if (res.data.success) {
                     load();
@@ -115,9 +115,7 @@ export default () => {
                 } else {
                     message.error(res.data.message ?? 'Change template failed')
                 }
-            }).finally(() => {
-
-            })
+            }).finally(() => setIsFormLoading(false));
         }
     }
 
@@ -136,7 +134,6 @@ export default () => {
 
     const showCommandDetail = (templateCommand: TemplateCommandGetDto, command: TemplateCommandExecDto) => {
         command.templateCommand = templateCommand;
-        setSelectedCommand({ ...command, isLoadingLogs: true });
         Docker_GetCommandLog(command.commandId).then(res => {
             if (res.data.success) {
                 command.logs = res.data.data;
@@ -144,7 +141,6 @@ export default () => {
             } else {
                 message.error(res.data.message ?? 'Fetch command log failed')
             }
-            setSelectedCommand({ ...command, isLoadingLogs: false });
         })
     }
 
@@ -161,7 +157,7 @@ export default () => {
                             instance.commands = signal.templateCommandExecs;
                             instance.containers = signal.containers;
 
-                            if(isStartInstance) isStartupCommandsRuns(instance);
+                            if (isStartInstance) isStartupCommandsRuns(instance);
                         }
                     }
                     forceUpdate();
@@ -296,7 +292,7 @@ export default () => {
                     {items.map(instance => <tr key={instance.id}>
                         <td>{instance.name}</td>
                         <td>
-                            <button className={"btn btn-" + (instance.template ? "dark" : "danger")} onClick={() => changeTemplate(instance)}>{(instance.template ? instance.template.name : 'No Template Selected')}</button>
+                            <button className={"btn btn-" + (instance.template ? "dark" : "danger")} onClick={() => changeTemplate(instance)}>{(instance.template ? instance.template.name : 'Please Select Template (Click on me)')}</button>
                         </td>
                         <td>
                             <div className="ports">
@@ -316,24 +312,41 @@ export default () => {
                                         }
                                     } catch { }
 
-                                    return <div key={i}>
+                                    return <div className="service" key={i}>
                                         {service.endpoint?.ports?.map((port, j) => {
-                                            let dockerComposeServicePort: any;
-                                            if (dockerComposeService) {
-                                                try {
-                                                    dockerComposeServicePort = dockerComposeService.ports.find((x: any) => x.published === port.publishedPort);
-                                                } catch {
+                                            // let dockerComposeServicePort: any;
+                                            // if (dockerComposeService) {
+                                            //     try {
+                                            //         dockerComposeServicePort = dockerComposeService.ports.find((x: any) => x.published === port.publishedPort);
+                                            //     } catch {
 
-                                                }
-                                            }
+                                            //     }
+                                            // }
                                             const containerState = (dockerComposeServiceName ? getContainerState(instance, dockerComposeServiceName) : -1);
 
-                                            return <span key={j}>
-                                                {containerState === 1 ?
-                                                    <a href={`${baseUrl}:${port.publishedPort}`} target="_blank" rel="noopener noreferrer">{port.publishedPort}</a>
-                                                    : port.publishedPort}
-                                                :
-                                                {dockerComposeServicePort?.name ? dockerComposeServicePort.name : port.targetPort}
+                                            let portname = '';
+                                            for (const key in instance.environments) {
+                                                const value = instance.environments[key];
+                                                if (value?.toString() === port?.publishedPort?.toString()) {
+                                                    portname = key
+                                                    .replace('EXPOSED_', '')
+                                                    .replace('_EXPOSED', '')
+                                                    .replace('EXPOSED', '')
+                                                    .replace('_PORT', '')
+                                                    .replace('PORT_', '')
+                                                    .replace('PORT', '');
+                                                }
+                                            }
+
+                                            return <span className="port" key={j} title={portname}>
+                                                <span className="name">{portname} = </span>
+                                                <span className="value">
+                                                    {containerState === 1 ?
+                                                        <a href={`${baseUrl}:${port.publishedPort}`} target="_blank" rel="noopener noreferrer">{port.publishedPort}</a>
+                                                        : port.publishedPort}
+                                                    {/* :
+                                                    {dockerComposeServicePort?.name ? dockerComposeServicePort.name : port.targetPort} */}
+                                                </span>
                                             </span>;
                                         })}
                                     </div>;
@@ -403,7 +416,7 @@ export default () => {
             </table>
         </div>
         <Modal title="Change template and run another network of containers" visible={modal === 'change-template'} onCancel={() => setModal('')} footer={null} maskClosable={false}>
-            <Form form={changeTemplateForm} onFinish={submitChangeTemplate}>
+            <Form className={(isFormLoading ? ' loading' : '')} form={changeTemplateForm} onFinish={submitChangeTemplate}>
                 <Row>
                     <Col xs={24}>
                         <Form.Item name="templateId" label="Template">
@@ -450,14 +463,5 @@ export default () => {
                 </ul>
             </div>
         </Modal>
-        {selectedCommand ? <Modal title="Command Detail" visible={modal === 'command-detail'} width="600px" onCancel={() => setModal('')} footer={null} maskClosable={false}>
-            <Row>
-                <Col xs={24}>
-                    <Spin tip="Loading..." spinning={selectedCommand.isLoadingLogs}>
-                        <Input.TextArea rows={10} value={selectedCommand.logs} />
-                    </Spin>
-                </Col>
-            </Row>
-        </Modal> : null}
     </div>;
 }

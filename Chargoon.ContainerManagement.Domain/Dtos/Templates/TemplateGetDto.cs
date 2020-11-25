@@ -12,7 +12,9 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Templates
         public string Name { get; set; }
 		public string Description { get; set; }
 		public string InsertCron { get; set; }
-        public string DockerCompose { get; set; }
+		public int? InsertLifeTime { get; set; }
+		public DateTime? ExpireTime { get; set; }
+		public string DockerCompose { get; set; }
         public string BeforeStartCommand { get; set; }
         public string AfterStartCommand { get; set; }
         public string BeforeStopCommand { get; set; }

@@ -14,5 +14,6 @@ namespace Chargoon.ContainerManagement.Domain.Services
         TemplateGetDto Get(int id);
         IEnumerable<TemplateGetDto> GetAll();
         TemplateGetDto Remove(int id);
-    }
+		void RemveExpired();
+	}
 }

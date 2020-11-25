@@ -10,6 +10,7 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Images
         public int Id { get; set; }
         public string Name { get; set; }
         public string BuildCron { get; set; }
-        public string BuildPath { get; set; }
+		public int? LifeTime { get; set; }
+		public string BuildPath { get; set; }
     }
 }

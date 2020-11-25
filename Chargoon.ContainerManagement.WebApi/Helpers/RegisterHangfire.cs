@@ -56,10 +56,11 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 			var templateService = provider.GetService<ITemplateService>();
 			var logger = provider.GetService<ILoggerService>();
 
-			RecurringJob.AddOrUpdate("DockerSystemPrune", () => DockerSystemPrune(), appSettings.Hangfire.DockerSystemPruneCron);
-			RecurringJob.AddOrUpdate("DockerClearExitedCommandCache", () => DockerClearExitedCommandCache(), appSettings.Hangfire.DockerClearExitedCommandCacheCron);
-			RecurringJob.AddOrUpdate("ClearLogs", () => ClearLogs(), appSettings.Hangfire.ClearLogCron);
-			RecurringJob.AddOrUpdate("ClearImageBuildLogs", () => ClearImageBuildLogs(), appSettings.Hangfire.ClearImageBuildLogCron);
+			RecurringJob.AddOrUpdate("DockerSystemPrune", () => DockerSystemPrune(), appSettings.Hangfire.DockerSystemPruneCron, TimeZoneInfo.Local);
+			RecurringJob.AddOrUpdate("DockerClearExitedCommandCache", () => DockerClearExitedCommandCache(), appSettings.Hangfire.DockerClearExitedCommandCacheCron, TimeZoneInfo.Local);
+			RecurringJob.AddOrUpdate("ClearLogs", () => ClearLogs(), appSettings.Hangfire.ClearLogCron, TimeZoneInfo.Local);
+			RecurringJob.AddOrUpdate("ClearImageBuildLogs", () => ClearImageBuildLogs(), appSettings.Hangfire.ClearImageBuildLogCron, TimeZoneInfo.Local);
+			RecurringJob.AddOrUpdate("RemoveExpiredTemplate", () => RemoveExpiredTemplate(), appSettings.Hangfire.RemoveExpiredTemplateCron, TimeZoneInfo.Local);
 
 			var existsRecurringJobIds = new List<string>();
 			foreach (var image in imageService.GetAll())
@@ -69,7 +70,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 				{
 					try
 					{
-						RecurringJob.AddOrUpdate(scheduleId, () => BuildImage(image.Id), image.BuildCron);
+						RecurringJob.AddOrUpdate(scheduleId, () => BuildImage(image.Id), image.BuildCron, TimeZoneInfo.Local);
 					}
 					catch (Exception ex)
 					{
@@ -91,7 +92,7 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 				{
 					try
 					{
-						RecurringJob.AddOrUpdate(scheduleId, () => InsertTemplate(template.Id), template.InsertCron);
+						RecurringJob.AddOrUpdate(scheduleId, () => InsertTemplate(template.Id), template.InsertCron, TimeZoneInfo.Local);
 					}
 					catch (Exception ex)
 					{
@@ -218,6 +219,22 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 				logger.LogInformation($"Hangfire: {nameof(InsertTemplate)} Start");
 				templateService.DupplicateFrom(templateId);
 				logger.LogInformation($"Hangfire: {nameof(InsertTemplate)} End");
+			}
+			catch (Exception ex)
+			{
+				logger.LogError(ex);
+			}
+		}
+
+		public static void RemoveExpiredTemplate()
+		{
+			var logger = services.BuildServiceProvider().GetService<ILoggerService>();
+			try
+			{
+				var templateService = services.BuildServiceProvider().GetService<ITemplateService>();
+				logger.LogInformation($"Hangfire: {nameof(RemoveExpiredTemplate)} Start");
+				templateService.RemveExpired();
+				logger.LogInformation($"Hangfire: {nameof(RemoveExpiredTemplate)} End");
 			}
 			catch (Exception ex)
 			{

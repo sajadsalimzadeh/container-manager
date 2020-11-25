@@ -75,6 +75,10 @@ namespace Chargoon.ContainerManagement.Service
             template.Environments = ReplaceTime(template.Environments);
             template.DockerCompose = ReplaceTime(template.DockerCompose);
             template = templateRepository.Insert(template);
+            if(template.InsertLifeTime.HasValue && template.InsertLifeTime.Value > 0)
+			{
+                template.ExpireTime = DateTime.Now.AddDays(template.InsertLifeTime.Value);
+			}
             var commands = new List<TemplateCommand>();
             foreach (var templateCommand in templateCommandRepository.GetAllByTemplateId(templateId))
             {
@@ -109,5 +113,14 @@ namespace Chargoon.ContainerManagement.Service
 			}
             return templateRepository.Delete(id).ToDto();
         }
+
+        public void RemveExpired()
+		{
+            var templates = templateRepository.GetAllExpired();
+			foreach (var template in templates)
+			{
+                Remove(template.Id);
+			}
+		}
     }
 }

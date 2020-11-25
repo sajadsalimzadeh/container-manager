@@ -1,6 +1,9 @@
 ﻿using Chargoon.ContainerManagement.Domain.Data.Repositories;
 using Chargoon.ContainerManagement.Domain.DataModels;
+using Dapper.FastCrud;
 using Microsoft.Extensions.Configuration;
+using System;
+using System.Collections.Generic;
 
 namespace Chargoon.ContainerManagement.Data.Repositories
 {
@@ -22,5 +25,10 @@ namespace Chargoon.ContainerManagement.Data.Repositories
             }
             return result;
         }
+
+        public IEnumerable<Template> GetAllExpired()
+		{
+            return conn.Find<Template>(s => s.Where($"{nameof(Template.ExpireTime):C} < @Time").WithParameters(new { Time = DateTime.Now }));
+		}
     }
 }

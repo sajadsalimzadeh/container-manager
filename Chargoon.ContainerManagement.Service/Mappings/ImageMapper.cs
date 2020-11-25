@@ -22,6 +22,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
                 Name = model.Name,
                 BuildCron = model.BuildCron,
                 BuildPath = model.BuildPath,
+                LifeTime = model.LifeTime,
             };
         }
 
@@ -37,6 +38,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
                 Name = dto.Name,
                 BuildCron = dto.BuildCron,
                 BuildPath = dto.BuildPath,
+                LifeTime = dto.LifeTime,
             };
         }
 
@@ -45,6 +47,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
             model.Name = dto.Name;
             model.BuildPath = dto.BuildPath;
             model.BuildCron = dto.BuildCron;
+            model.LifeTime = dto.LifeTime;
             return model;
         }
     }

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Button, Col, Form, Input, message, Modal, Popconfirm, Row } from 'antd';
+import { Button, Col, Form, Input, InputNumber, message, Modal, Popconfirm, Row } from 'antd';
 import { ImageBuildLogDto, ImageGetDto } from '../../models';
 import { Image_Add, Image_Change, Image_GetAll, Image_GetAllBuildLogs, Image_GetBuildLogLink, Image_Remove } from '../../services';
 import { useForm } from 'antd/lib/form/Form';
@@ -15,6 +15,7 @@ export default () => {
     const [items, setItems] = useState<ImageGetDto[]>([]);
     const [buildLogs, setBuildLogs] = useState<ImageBuildLogDto[]>([])
     const [searchValue, setSearchValue] = useState('');
+    const [isFormLoading, setIsFormLoading] = useState(false);
 
     const [form] = useForm();
 
@@ -31,6 +32,7 @@ export default () => {
 
     const submitForm = (values: any) => {
         if (id) {
+            setIsFormLoading(true);
             Image_Change(id, values).then(res => {
                 if (res.data.success) {
                     if (res.data.success) {
@@ -41,8 +43,9 @@ export default () => {
                         message.error(res.data.message ?? 'Edit image failed');
                     }
                 }
-            });
+            }).finally(() => setIsFormLoading(false));
         } else {
+            setIsFormLoading(true);
             Image_Add(values).then(res => {
                 if (res.data.success) {
                     if (res.data.success) {
@@ -53,7 +56,7 @@ export default () => {
                         message.error(res.data.message ?? 'Add image failed');
                     }
                 }
-            });
+            }).finally(() => setIsFormLoading(false));
         }
     }
 
@@ -113,6 +116,7 @@ export default () => {
                     <col width="200px" />
                     <col width="" />
                     <col width="200px" />
+                    <col width="200px" />
                     <col width="" />
                     <col width="300px" />
                 </colgroup>
@@ -122,6 +126,7 @@ export default () => {
                         <th>Name</th>
                         <th>Build Path</th>
                         <th>Build Cron</th>
+                        <th>Life Time</th>
                         <th></th>
                         <th>Actions</th>
                     </tr>
@@ -132,6 +137,7 @@ export default () => {
                         <td>{image.name}</td>
                         <td>{image.buildPath}</td>
                         <td>{image.buildCron}</td>
+                        <td>{image.lifeTime}</td>
                         <td></td>
                         <td>
                             <div className="actions">
@@ -147,21 +153,26 @@ export default () => {
             </table>
         </div>
         <Modal title="Image Form" visible={modal === 'form'} onCancel={() => setModal('')} footer={null}>
-            <Form className="floating-label" form={form} onFinish={submitForm}>
+            <Form className={"floating-label" + (isFormLoading ? ' loading' : '')} form={form} onFinish={submitForm}>
                 <Row>
-                    <Col xs={24}>
+                    <Col xs={24} className="p-2">
                         <Form.Item name="name" label="Name" rules={[{ required: true }]}>
                             <Input placeholder="Name" />
                         </Form.Item>
                     </Col>
-                    <Col xs={24}>
+                    <Col xs={24} className="p-2">
                         <Form.Item name="buildPath" label="Build Path" rules={[{ required: true }]}>
                             <Input placeholder="C:// ...." />
                         </Form.Item>
                     </Col>
-                    <Col xs={24}>
+                    <Col xs={12} className="p-2">
                         <Form.Item name="buildCron" label="Build Cron">
                             <Input placeholder="0 6 * * *" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={12} className="p-2">
+                        <Form.Item name="lifeTime" label="Life Time">
+                            <InputNumber placeholder="day" />
                         </Form.Item>
                     </Col>
                 </Row>

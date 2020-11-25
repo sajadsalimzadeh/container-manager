@@ -20,15 +20,18 @@ namespace Chargoon.ContainerManagement.Service
 	{
 		private readonly IImageRepository imageRepository;
 		private readonly ICommandService commandService;
+		private readonly IDockerService dockerService;
 		private readonly ILoggerService logger;
 
 		public ImageService(
 			IImageRepository imageRepository,
 			ICommandService commandService,
+			IDockerService dockerService,
 			ILoggerService logger)
 		{
 			this.imageRepository = imageRepository;
 			this.commandService = commandService;
+			this.dockerService = dockerService;
 			this.logger = logger;
 		}
 
@@ -155,6 +158,23 @@ namespace Chargoon.ContainerManagement.Service
 					if (file.Name.CompareTo(compareDate) < 0)
 					{
 						File.Delete(file.FullName);
+					}
+				}
+			}
+		}
+
+		public void RemoveExpired()
+		{
+			var dockerImages = dockerService.GetAllImage();
+			var images = imageRepository.GetAll();
+			foreach (var image in images)
+			{
+				if (image.LifeTime.HasValue && image.LifeTime.Value > 0)
+				{
+					var datetime = DateTime.Now.AddDays(-image.LifeTime.Value);
+					foreach (var item in dockerImages.Where(x => x.RepoTags.Any(y => y.Contains(image.Name)) && x.Created < datetime))
+					{
+						dockerService.RemoveImage(item.ID);
 					}
 				}
 			}

@@ -6,7 +6,8 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Domain.Data.Repositories
 {
-    public interface ITemplateRepository : ICrudRepository<Template, int>
-    {
-    }
+	public interface ITemplateRepository : ICrudRepository<Template, int>
+	{
+		IEnumerable<Template> GetAllExpired();
+	}
 }

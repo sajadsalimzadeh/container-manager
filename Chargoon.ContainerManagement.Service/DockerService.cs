@@ -187,6 +187,11 @@ namespace Chargoon.ContainerManagement.Service
 			client.Containers.RemoveContainerAsync(id, new ContainerRemoveParameters());
 		}
 
+		public void RemoveImage(string name)
+		{
+			client.Images.DeleteImageAsync(name, new ImageDeleteParameters());
+		}
+
 		public GetArchiveFromContainerResponse ArchiveContainer(string id, GetArchiveFromContainerParameters dto)
 		{
 			return client.Containers.GetArchiveFromContainerAsync(id, dto, false).Result;

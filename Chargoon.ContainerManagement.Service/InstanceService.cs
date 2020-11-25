@@ -251,6 +251,12 @@ namespace Chargoon.ContainerManagement.Service
 				}
 				commandService.Execute(command);
 			}
+			memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out List<TemplateCommandExecDto> tces);
+
+			if (tces != null)
+			{
+				memoryCache.Set(GetTemplateCommandExecsCacheName(), tces.Where(x => x.InstanceId != instance.Id).ToList(), TimeSpan.FromHours(1));
+			}
 			return instance.ToDto();
 		}
 
@@ -284,8 +290,7 @@ namespace Chargoon.ContainerManagement.Service
 
 		public InstanceGetDto RunOwnCommand(int id, int templateCommandId)
 		{
-			List<TemplateCommandExecDto> tces;
-			memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out tces);
+			memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out List<TemplateCommandExecDto> tces);
 
 			if (tces != null)
 			{
