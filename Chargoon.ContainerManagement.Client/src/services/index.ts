@@ -122,5 +122,5 @@ export function Template_Change(id: number, dto: TemplateChangeDto) { return axi
 export function Template_Remove(id: number) { return axios.delete<OperationResult<TemplateGetDto>>(`Templates/${id}`); }
 
 
-export function Custome_GetNightlyBuildLogs(branch: string, date: string) { return axios.get<OperationResult<CustomeNightlyBuildLog[]>>(`Custome/NightlyBuildLogs/${branch}/${date}`); }
-export function Custome_GetNightlyBuildLogDownloadPath(branch: string, date: string, filename: string) { return config.baseURL + `Custome/NightlyBuildLogs/${branch}/${date.substr(0, 10)}/${filename}`; }
+export function Custome_GetNightlyBuildLogs(branch: string, date: string) { return axios.get<OperationResult<CustomeNightlyBuildLog[]>>(`Custom/NightlyBuildLogs/${branch}/${date}`); }
+export function Custome_GetNightlyBuildLogDownloadPath(branch: string, date: string, filename: string) { return config.baseURL + `/Custom/NightlyBuildLogs/${branch}/${date.substr(0, 10)}/${filename}`; }

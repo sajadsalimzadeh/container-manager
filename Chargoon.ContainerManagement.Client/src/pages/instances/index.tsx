@@ -366,7 +366,7 @@ export default () => {
                         </td>
                         <td>
                             <div className="ports">
-                                {instance.services?.map((service, i) => {
+                                {instance.services?.sort((x1,x2) => (x1.spec.name > x2.spec.name ? 1 : (x1.spec.name < x2.spec.name ? -1 : 0))).map((service, i) => {
                                     let dockerComposeServiceName: any;
                                     try {
                                         const dockerCompose = getReplacedDockerCompose(instance);

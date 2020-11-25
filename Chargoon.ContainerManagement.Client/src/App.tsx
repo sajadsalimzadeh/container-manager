@@ -1,22 +1,22 @@
 import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { HashRouter, Route, Switch } from 'react-router-dom';
 import { Loading } from './components/loading';
-
+import { Init } from './services';
+import { message } from 'antd';
 import Auth from './layouts/auth';
 import LayoutPanel from './layouts/panel';
 
 import './App.scss';
 import 'jquery/dist/jquery.min.js';
 import 'bootstrap/dist/js/bootstrap.bundle.min.js';
-import { Init } from './services';
-import { message } from 'antd';
 
 function App() {
 
   const [isLoad, setIsLoad] = useState(false)
 
   useEffect(() => {
-    Init('assets/config.json').then(res => {
+    const version = '[AIV]{version}[/AIV]';
+    Init(`assets/config.json?${version}`).then(res => {
       setIsLoad(true);
     });
 

@@ -26,11 +26,18 @@
 
     .ports {
         display: flex;
-        flex-direction: column;
+        flex-direction: row;
         align-items: flex-start;
 
         .service {
             width: 100%;
+            display: flex;
+            padding: 0 5px;
+            flex-direction: column;
+
+            &:not(:last-child) {
+                border-right: 1px solid #ccc;
+            }
 
             .port {
                 width: 100%;
@@ -41,6 +48,12 @@
                 .name,
                 .value {
                     text-align: left;
+                }
+
+                @media screen and (max-width: 1000px) {
+                    .name {
+                        display: none;
+                    }
                 }
             }
         }
