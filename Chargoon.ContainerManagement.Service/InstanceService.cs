@@ -192,6 +192,7 @@ namespace Chargoon.ContainerManagement.Service
 		private InstanceGetDto Start(Instance instance)
 		{
 			if (instance == null) throw new ArgumentNullException(nameof(instance));
+			Stop(instance);
 			var dto = instance.ToDto();
 			if (instance.Template == null) throw new Exception("Instance does not have any template");
 			if (dto.Template.DockerCompose == null) throw new Exception("Docker Compose Failed to Read");
