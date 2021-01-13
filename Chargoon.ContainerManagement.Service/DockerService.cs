@@ -11,52 +11,72 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
+using YamlDotNet.Serialization;
 
 namespace Chargoon.ContainerManagement.Service
 {
 	public class DockerService : IDockerService
 	{
+		private DockerClient _client;
+
 		private readonly ILoggerService logger;
 		private readonly IMemoryCache memoryCache;
 		private readonly ICommandService commandService;
+		private readonly IAuthenticationService authenticationService;
 		private readonly AppSettings appSettings;
 		private readonly IConfiguration configuration;
-		private readonly DockerClient client;
 
 		public DockerService(
 			ILoggerService logger,
 			IMemoryCache memoryCache,
 			IOptions<AppSettings> appSettings,
 			ICommandService commandService,
+			IAuthenticationService authenticationService,
 			IConfiguration configuration)
 		{
 			this.logger = logger;
 			this.memoryCache = memoryCache;
 			this.commandService = commandService;
+			this.authenticationService = authenticationService;
 			this.appSettings = appSettings.Value;
 			this.configuration = configuration;
-			var dockerSettings = configuration.GetSection("Docker");
-			client = new DockerClientConfiguration(new Uri(dockerSettings.GetSection("Url").Value)).CreateClient();
 		}
 
 		private string GetContainerCommandsCacheName() => $"Container-Commands";
+
+		private DockerClient GetClient()
+		{
+			if (_client != null) return _client;
+			var user = authenticationService.GetUser();
+			var url = user.Host;
+			if (string.IsNullOrEmpty(url) && appSettings.Docker.SelfHostEnable) url = appSettings.Docker.Url;
+			if (string.IsNullOrEmpty(url))
+				throw new Exception("Please Enter Your Host First");
+			if (url.IndexOf(":") < 0) url += ":2375";
+			if (url.IndexOf("http") < 0) url = "http://" + url;
+			return _client = new DockerClientConfiguration(new Uri(url)).CreateClient();
+
+		}
 
 		public IEnumerable<ImagesListResponse> GetAllImage()
 		{
 			if (!memoryCache.TryGetValue(nameof(GetAllImage), out IEnumerable<ImagesListResponse> result))
 			{
-				result = client.Images.ListImagesAsync(new ImagesListParameters()).Result;
+				result = GetClient().Images.ListImagesAsync(new ImagesListParameters()).Result;
 				memoryCache.Set(nameof(GetAllImage), result, TimeSpan.FromSeconds(appSettings.Docker.ImageCacheTimeout));
 			}
 			return result;
 		}
 
-		public IEnumerable<ContainerListResponse> GetAllContainer()
+		public IEnumerable<ContainerListResponse> GetAllContainer(bool all = false)
 		{
-			if (!memoryCache.TryGetValue(nameof(GetAllContainer), out IEnumerable<ContainerListResponse> result))
+			if (!memoryCache.TryGetValue(nameof(GetAllContainer) + (all ? "_All" : ""), out IEnumerable<ContainerListResponse> result))
 			{
-				result = client.Containers.ListContainersAsync(new ContainersListParameters()).Result;
-				memoryCache.Set(nameof(GetAllContainer), result, TimeSpan.FromSeconds(appSettings.Docker.ContainerCacheTimeout));
+				result = GetClient().Containers.ListContainersAsync(new ContainersListParameters()
+				{
+					All = all
+				}).Result;
+				memoryCache.Set(nameof(GetAllContainer) + (all ? "_All" : ""), result, TimeSpan.FromSeconds(appSettings.Docker.ContainerCacheTimeout));
 			}
 			return result;
 		}
@@ -77,7 +97,7 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			if (!memoryCache.TryGetValue(nameof(GetAllService), out IEnumerable<SwarmService> result))
 			{
-				result = client.Swarm.ListServicesAsync(new ServicesListParameters()).Result;
+				result = GetClient().Swarm.ListServicesAsync(new ServicesListParameters()).Result;
 				memoryCache.Set(nameof(GetAllService), result, TimeSpan.FromSeconds(appSettings.Docker.ServiceCacheTimeout));
 			}
 			return result;
@@ -87,7 +107,7 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			if (!memoryCache.TryGetValue(nameof(GetAllService), out IEnumerable<NetworkResponse> result))
 			{
-				result = client.Networks.ListNetworksAsync(new NetworksListParameters()).Result;
+				result = GetClient().Networks.ListNetworksAsync(new NetworksListParameters()).Result;
 				memoryCache.Set(nameof(GetAllService), result, TimeSpan.FromSeconds(appSettings.Docker.ServiceCacheTimeout));
 			}
 			return result;
@@ -109,7 +129,7 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			if (!memoryCache.TryGetValue(nameof(GetAllNode), out IEnumerable<NodeListResponse> result))
 			{
-				result = client.Swarm.ListNodesAsync().Result;
+				result = GetClient().Swarm.ListNodesAsync().Result;
 				memoryCache.Set(nameof(GetAllNode), result, TimeSpan.FromSeconds(appSettings.Docker.NodeCacheTimeout));
 			}
 			return result;
@@ -117,89 +137,89 @@ namespace Chargoon.ContainerManagement.Service
 
 		public IEnumerable<ContainerFileSystemChangeResponse> GetContainerChanges(string id)
 		{
-			return client.Containers.InspectChangesAsync(id).Result;
+			return GetClient().Containers.InspectChangesAsync(id).Result;
 		}
 
 		public ContainerInspectResponse GetContainerInspect(string id)
 		{
-			return client.Containers.InspectContainerAsync(id).Result;
+			return GetClient().Containers.InspectContainerAsync(id).Result;
 		}
 
 		public ContainerProcessesResponse GetContainerProcesses(string id)
 		{
-			return client.Containers.ListProcessesAsync(id, new ContainerListProcessesParameters()).Result;
+			return GetClient().Containers.ListProcessesAsync(id, new ContainerListProcessesParameters()).Result;
 		}
 
 		public string GetContainerLog(string id)
 		{
-			var mstream = client.Containers.GetContainerLogsAsync(id, true, new ContainerLogsParameters()).Result;
+			var mstream = GetClient().Containers.GetContainerLogsAsync(id, true, new ContainerLogsParameters()).Result;
 			var result = mstream.ReadOutputToEndAsync(default).Result;
 			return result.stderr ?? result.stdout;
 		}
 
 		public Stream GetContainerExport(string id)
 		{
-			return client.Containers.ExportContainerAsync(id).Result;
+			return GetClient().Containers.ExportContainerAsync(id).Result;
 		}
 
 		public bool StartContainer(string id)
 		{
-			return client.Containers.StartContainerAsync(id, new ContainerStartParameters()).Result;
+			return GetClient().Containers.StartContainerAsync(id, new ContainerStartParameters()).Result;
 		}
 
 		public bool StopContainer(string id)
 		{
-			return client.Containers.StopContainerAsync(id, new ContainerStopParameters()).Result;
+			return GetClient().Containers.StopContainerAsync(id, new ContainerStopParameters()).Result;
 		}
 
 		public void KillContainer(string id)
 		{
-			client.Containers.KillContainerAsync(id, new ContainerKillParameters());
+			GetClient().Containers.KillContainerAsync(id, new ContainerKillParameters());
 		}
 
 		public void RestartContainer(string id)
 		{
-			client.Containers.RestartContainerAsync(id, new ContainerRestartParameters());
+			GetClient().Containers.RestartContainerAsync(id, new ContainerRestartParameters());
 		}
 
 		public ContainerUpdateResponse UpdateContainer(string id, ContainerUpdateParameters dto)
 		{
-			return client.Containers.UpdateContainerAsync(id, dto).Result;
+			return GetClient().Containers.UpdateContainerAsync(id, dto).Result;
 		}
 
 		public void RenameContainer(string id, ContainerRenameParameters dto)
 		{
-			client.Containers.RenameContainerAsync(id, dto, default);
+			GetClient().Containers.RenameContainerAsync(id, dto, default);
 		}
 
 		public void PauseContainer(string id)
 		{
-			client.Containers.PauseContainerAsync(id);
+			GetClient().Containers.PauseContainerAsync(id);
 		}
 
 		public void UnPauseContainer(string id)
 		{
-			client.Containers.UnpauseContainerAsync(id);
+			GetClient().Containers.UnpauseContainerAsync(id);
 		}
 
 		public void RemoveContainer(string id)
 		{
-			client.Containers.RemoveContainerAsync(id, new ContainerRemoveParameters());
+			GetClient().Containers.RemoveContainerAsync(id, new ContainerRemoveParameters());
 		}
 
 		public void RemoveImage(string name)
 		{
-			client.Images.DeleteImageAsync(name, new ImageDeleteParameters());
+			GetClient().Images.DeleteImageAsync(name, new ImageDeleteParameters());
 		}
 
 		public GetArchiveFromContainerResponse ArchiveContainer(string id, GetArchiveFromContainerParameters dto)
 		{
-			return client.Containers.GetArchiveFromContainerAsync(id, dto, false).Result;
+			return GetClient().Containers.GetArchiveFromContainerAsync(id, dto, false).Result;
 		}
 
 		public void ExtractArchiveToContainerAsync(string id, ContainerPathStatParameters dto, Stream stream)
 		{
-			client.Containers.ExtractArchiveToContainerAsync(id, dto, stream);
+			GetClient().Containers.ExtractArchiveToContainerAsync(id, dto, stream);
 		}
 
 		public IEnumerable<ContainerExecInspectResponse> GetAllContainerCommand(string id)
@@ -213,7 +233,7 @@ namespace Chargoon.ContainerManagement.Service
 					{
 						try
 						{
-							result.Add(client.Exec.InspectContainerExecAsync(command.CommandId).Result);
+							result.Add(GetClient().Exec.InspectContainerExecAsync(command.CommandId).Result);
 						}
 						catch { }
 					}
@@ -226,20 +246,32 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			//========== Parse CMD ==========\\
 			var cmds = new List<string>();
-			var inQuote = false;
-			var inDoubleQuote = false;
+			var strStack = new Stack<char>();
 			var temp = string.Empty;
 			command = command.Trim();
 			for (int i = 0; i < command.Length; i++)
 			{
 				var ch = command[i];
-				if (ch == '"') inDoubleQuote = !inDoubleQuote;
-				else if (ch == '\'') inQuote = !inQuote;
+				if (ch == '"' || ch == '\'')
+				{
+					if (strStack.Count > 0)
+					{
+						if (strStack.Peek() == ch)
+						{
+							strStack.Pop();
+						}
+						else
+						{
+							strStack.Push(ch);
+						}
+					}
+					else strStack.Push(ch);
+				}
 				else
 				{
 					if (ch == ' ')
 					{
-						if (inQuote || inDoubleQuote) temp += ch;
+						if (strStack.Count > 0) temp += ch;
 						else
 						{
 							cmds.Add(temp);
@@ -264,8 +296,8 @@ namespace Chargoon.ContainerManagement.Service
 				WorkingDir = "/",
 				Cmd = ParseCommand(command)
 			};
-			var result = client.Exec.ExecCreateContainerAsync(id, dto).Result;
-			var mstream = client.Exec.StartAndAttachContainerExecAsync(result.ID, true).Result;
+			var result = GetClient().Exec.ExecCreateContainerAsync(id, dto).Result;
+			var mstream = GetClient().Exec.StartAndAttachContainerExecAsync(result.ID, true).Result;
 			Task.Run(() =>
 			{
 				if (memoryCache.TryGetValue(GetContainerCommandsCacheName(), out List<DockerCommandCacheDto> commands))
@@ -327,7 +359,7 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			try
 			{
-				return client.Exec.InspectContainerExecAsync(id).Result;
+				return GetClient().Exec.InspectContainerExecAsync(id).Result;
 			}
 			catch
 			{
@@ -360,22 +392,112 @@ namespace Chargoon.ContainerManagement.Service
 			commandService.Execute($"docker-compose build \"{dockerComposeFilePath}\"");
 		}
 
-		public void Deploy(string stackName, string dockerCompose)
+		public void Deploy(string stackName, string dockerComposeString)
 		{
-			var dockerComposeFilePath = CreateDockerComposeFile(dockerCompose);
-			commandService.Execute($"docker stack deploy -c \"{dockerComposeFilePath}\" {stackName}");
+			var client = GetClient();
+			var deserializer = new DeserializerBuilder().Build();
+			var dockerCompose = deserializer.Deserialize<DockerCompose>(dockerComposeString);
+			var containers = GetAllContainer(true);
+			var network = client.Networks.ListNetworksAsync(new NetworksListParameters()).Result.FirstOrDefault(x => x.Name == stackName);
+			var networkID = network?.ID;
+			if (network == null)
+			{
+				var networkCreateResult = client.Networks.CreateNetworkAsync(new NetworksCreateParameters()
+				{
+					Name = stackName,
+					Driver = "nat",
+					Scope = "local",
+					Labels = new Dictionary<string, string>()
+					{
+						{ "com.docker.stack.namespace", stackName }
+					},
+				}).Result;
+				networkID = networkCreateResult.ID;
+			}
+			foreach (var item in dockerCompose.services)
+			{
+				var container = containers.FirstOrDefault(x => x.Names.Any(y => y.IndexOf(stackName + "_" + item.Key) > -1));
+				if (container != null)
+				{
+					if (container.State.ToLower().IndexOf("exited") > -1)
+					{
+						client.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters()).Wait();
+					}
+					if (container.State.ToLower().IndexOf("stop") > -1)
+					{
+						client.Containers.StartContainerAsync(container.ID, new ContainerStartParameters()).Wait();
+						continue;
+					}
+				}
+				var containerParameter = new CreateContainerParameters()
+				{
+					Name = stackName + "_" + item.Key,
+					Image = item.Value.image,
+					Env = item.Value.environment.Select(x => x.Replace(":", "=")).ToList(),
+					Labels = new Dictionary<string, string>()
+					{
+						{ "com.docker.compose.project", stackName },
+						{ "com.docker.compose.service", item.Key },
+					},
+					ExposedPorts = item.Value.ports.ToDictionary(x =>
+					{
+						var split = x.Split(':');
+						return split[1] + "/tcp";
+					}, x => new EmptyStruct()),
+					HostConfig = new HostConfig()
+					{
+						NetworkMode = stackName,
+						Binds = item.Value.volumes?.Select(x => x).ToList(),
+						PortBindings = item.Value.ports.ToDictionary(x =>
+						{
+							var split = x.Split(':');
+							return split[1] + "/tcp";
+						}, x =>
+						{
+							var split = x.Split(':');
+							return new List<PortBinding> {
+								new PortBinding
+								{
+									HostIP = "",
+									HostPort = split[0]
+								}
+							} as IList<PortBinding>;
+						})
+					},
+					NetworkingConfig = new NetworkingConfig()
+					{
+						EndpointsConfig = new Dictionary<string, EndpointSettings>
+						{
+							{
+								stackName, new EndpointSettings()
+								{
+									NetworkID = networkID,
+									Aliases = new List<string>() { item.Key },
+									Links = dockerCompose.services.Select(x => x.Key).ToList()
+								}
+							}
+						}
+					}
+				};
+
+				var containerCreateResult = client.Containers.CreateContainerAsync(containerParameter).Result;
+				var containerStartParameter = new ContainerStartParameters() { };
+				var startContainerResult = client.Containers.StartContainerAsync(containerCreateResult.ID, containerStartParameter).Result;
+			}
 		}
 
 		public void Undeploy(string stackName, string username)
 		{
-			var services = GetAllService();
-			var searchValue = (stackName + "_" + username).ToLower();
-			foreach (var service in services)
+			var client = GetClient();
+			var containers = GetAllContainer();
+			var searchValue = (stackName + "_" + username + "_").ToLower();
+			foreach (var container in containers)
 			{
-				if (service.Spec.Name.ToLower().StartsWith(searchValue))
+				if (container.Names.Any(x => x.ToLower().IndexOf(searchValue) > -1))
 				{
-					client.Swarm.RemoveServiceAsync(service.ID).Wait();
-					logger.LogInformation($"Service {service.Spec.Name} Shutting down");
+					var stopContainerResult = client.Containers.StopContainerAsync(container.ID, new ContainerStopParameters()).Result;
+					client.Containers.RemoveContainerAsync(container.ID, new ContainerRemoveParameters()).Wait();
+					logger.LogInformation($"Container {string.Join(",", container.Names)} Shutting down");
 				}
 			}
 			var networks = GetAllNetwork();
@@ -383,11 +505,17 @@ namespace Chargoon.ContainerManagement.Service
 			{
 				if (network.Name.ToLower().StartsWith(searchValue))
 				{
-					client.Networks.DeleteNetworkAsync(network.ID).Wait();
-					logger.LogInformation($"Network {network.Name} Deleted");
+					try
+					{
+						GetClient().Networks.DeleteNetworkAsync(network.ID).Wait();
+						logger.LogInformation($"Network {network.Name} Deleted");
+					}
+					catch
+					{
+
+					}
 				}
 			}
 		}
-
 	}
 }

@@ -15,6 +15,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
             {
                 Id = user.Id,
                 Username = user.Username,
+                Host = user.Host,
             };
             try
             {
@@ -40,6 +41,7 @@ namespace Chargoon.ContainerManagement.Service.Mappings
             {
                 Username = dto.Username,
                 Password = dto.Password,
+                Host = dto.Host,
                 Roles = string.Join(',', dto.Roles),
             };
         }

@@ -18,10 +18,11 @@ namespace Chargoon.ContainerManagement.Domain.Models
     public class AppSettingsDocker
     {
         public string Url { get; set; } = "http://localhost:2375";
-        public int ImageCacheTimeout { get; set; } = 10; //Seconds
-        public int ContainerCacheTimeout { get; set; } = 10; //Seconds
-        public int ServiceCacheTimeout { get; set; } = 10; //Seconds
-        public int NodeCacheTimeout { get; set; } = 10; //Seconds
+        public bool SelfHostEnable { get; set; } = false;
+		public int ImageCacheTimeout { get; set; } = 5; //Seconds
+        public int ContainerCacheTimeout { get; set; } = 5; //Seconds
+        public int ServiceCacheTimeout { get; set; } = 5; //Seconds
+        public int NodeCacheTimeout { get; set; } = 5; //Seconds
         public string Repository { get; set; }
     }
 

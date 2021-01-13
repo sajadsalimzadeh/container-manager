@@ -115,16 +115,9 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
                 var item = new InstanceSignalDto()
                 {
                     InstanceId = instance.Id,
-                    Services = instanceService.GetAllOwnService(instance.Id),
                     Containers = instanceService.GetAllOwnContainer(instance.Id),
                     TemplateCommandExecs = instanceService.GetAllOwnCommands(instance.Id),
                 };
-                item.Services = item.Services.ToList().ConvertAll(x =>
-                {
-                    x.PreviousSpec = null;
-                    x.Spec.TaskTemplate = null;
-                    return x;
-                });
                 result.Add(item);
             }
             return new OperationResult<IEnumerable<InstanceSignalDto>>(result);

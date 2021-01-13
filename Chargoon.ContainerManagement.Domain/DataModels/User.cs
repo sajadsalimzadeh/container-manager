@@ -12,7 +12,8 @@ namespace Chargoon.ContainerManagement.Domain.DataModels
         public string Username { get; set; }
         public string Password { get; set; }
         public string Roles { get; set; }
+		public string Host { get; set; }
 
-        public IEnumerable<Instance> Instances { get; set; }
+		public IEnumerable<Instance> Instances { get; set; }
     }
 }

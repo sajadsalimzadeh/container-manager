@@ -40,7 +40,7 @@ export default () => {
                 if (res.data.success) {
                     load();
                     setModal('');
-                   message.success('Add user successful');
+                    message.success('Add user successful');
                 } else {
                     message.error(res.data.message ?? 'Add user failed');
                 }
@@ -56,7 +56,7 @@ export default () => {
             if (res.data.success) {
                 load();
                 setModal('');
-               message.success('Add instance successful');
+                message.success('Add instance successful');
             } else {
                 message.error(res.data.message ?? 'Add instance failed');
             }
@@ -80,7 +80,7 @@ export default () => {
             Instance_Remove(instance.id).then(res => {
                 if (res.data.success) {
                     load();
-                   message.success('Remove instance successful');
+                    message.success('Remove instance successful');
                 } else {
                     message.error(res.data.message ?? 'Add instance failed');
                 }
@@ -97,7 +97,7 @@ export default () => {
                 history.push('/instances');
                 window.location.reload();
                 Auth_SetLoginInfo(res.data.data);
-               message.success('Change user done successfully');
+                message.success('Change user done successfully');
             } else {
                 message.error(res.data.message ?? 'Change user failed');
             }
@@ -114,7 +114,7 @@ export default () => {
         setLoading(true);
         User_ResetPassword(id, { newPassword: password }).then(res => {
             if (res.data.success) {
-               message.success('Reset user password done successfully');
+                message.success('Reset user password done successfully');
             } else {
                 message.error(res.data.message ?? 'Reset user password failed');
             }
@@ -133,13 +133,14 @@ export default () => {
                 <h4>Users</h4>
                 <button className="btn btn-primary" onClick={() => load()}>Reload</button>
                 <button className="btn btn-success" onClick={() => setModal('add-user')}>Add New User</button>
-                <Input placeholder="Search by username ..." value={searchValue} onChange={e => setSearchValue(e.target.value)}/>
+                <Input placeholder="Search by username ..." value={searchValue} onChange={e => setSearchValue(e.target.value)} />
             </div>
             <table className={"custom-table" + (loading ? ' loading' : '')}>
                 <colgroup>
                     <col width="70px" />
                     <col width="120px" />
                     <col width="170px" />
+                    <col width="" />
                     <col width="" />
                     <col width="360px" />
                 </colgroup>
@@ -148,6 +149,7 @@ export default () => {
                         <th>Id</th>
                         <th>Username</th>
                         <th>Roles</th>
+                        <th>Host</th>
                         <th>Instances</th>
                         <th>Actions</th>
                     </tr>
@@ -157,6 +159,7 @@ export default () => {
                         <td>{user.id}</td>
                         <td>{user.username}</td>
                         <td>{user.roles.join(',')}</td>
+                        <td>{user.host}</td>
                         <td>
                             <div className="instances">
                                 {user.instances.map(instance => <div key={instance.id}>
@@ -198,6 +201,11 @@ export default () => {
                     <Col xs={24}>
                         <Form.Item name="password" label="Password" rules={[{ required: true }]}>
                             <Input placeholder="Password" type="password" />
+                        </Form.Item>
+                    </Col>
+                    <Col xs={24}>
+                        <Form.Item name="host" label="Host">
+                            <Input placeholder="Host" />
                         </Form.Item>
                     </Col>
                     <Col xs={24}>

@@ -63,6 +63,12 @@ namespace Chargoon.ContainerManagement.WebApi.Controllers
             return new OperationResult<UserGetDto>(userService.ChangePassword(id, dto));
         }
 
+        [HttpPatch("Own/ChangeProfile"), Auth, Log]
+        public OperationResult<UserGetDto> ChangeOwnProfile([FromBody] UserChangeProfileDto dto)
+        {
+            return new OperationResult<UserGetDto>(userService.ChangeOwnProfile(dto));
+        }
+
         [HttpPatch("Own/ChangePassword"), Auth, Log]
         public OperationResult<UserGetDto> ChangeOwnPassword([FromBody] UserChangePasswordDto dto)
         {

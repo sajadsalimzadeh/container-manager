@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
-import { InstanceGetDto, CustomeNightlyBuildLog, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto } from '../../models';
-import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal, Custome_GetNightlyBuildLogs, Custome_GetNightlyBuildLogDownloadPath } from '../../services';
+import { InstanceGetDto, CustomeNightlyBuildLog, TemplateCommandColor, TemplateCommandExecDto, TemplateCommandGetDto, TemplateGetDto, ContainerListResponse, UserGetDto } from '../../models';
+import { Instance_GetAllOwn, Instance_StartOwn, Instance_StopOwn, Instance_ChangeOwnTemplate, Template_GetAll, Instance_RunCommand, Docker_GetCommandLog, Instance_Signal, Custome_GetNightlyBuildLogs, Custome_GetNightlyBuildLogDownloadPath, User_GetOwn } from '../../services';
 import { Modal, Col, Row, Form, Button, Tooltip, Dropdown, Menu, message } from 'antd';
 import useInterval from '@use-it/interval';
 import useForceUpdate from 'use-force-update';
@@ -24,7 +24,9 @@ export default () => {
     const [isSignalOnLoading, setIsSignalOnLoading] = useState(false);
 
     const [selectedTemplate, setSelectedTemplate] = useState<TemplateGetDto>();
-    const [nightlyBuildLogs, setNightlyBuildLogs] = useState<CustomeNightlyBuildLog[]>([])
+    const [nightlyBuildLogs, setNightlyBuildLogs] = useState<CustomeNightlyBuildLog[]>([]);
+
+    const [user, setUser] = useState<UserGetDto>();
 
     const forceUpdate = useForceUpdate();
 
@@ -202,11 +204,16 @@ export default () => {
         return Object.keys(instance.template.dockerComposeObj.services);
     }
 
-    const getServiceState = (instance: InstanceGetDto, serviceName: string): number => {
-        if (!instance.services || !serviceName) return 0;
-        const searchValue = (instance.name + "_" + serviceName).toLowerCase();
-        return instance.services.findIndex(x => (x.spec ? x.spec.name.toLowerCase().indexOf(searchValue) > -1 : false)) > -1 ? 1 : -1;
+    const getContainerByServiceName = (instance: InstanceGetDto, serviceName: string): ContainerListResponse | undefined => {
+        if (!instance?.containers?.length) return;
+        return instance.containers.find(x => x.names.findIndex(y => y.indexOf(serviceName) > -1) > -1);
     }
+
+    // const getServiceState = (instance: InstanceGetDto, serviceName: string): number => {
+    //     if (!instance.services || !serviceName) return 0;
+    //     const searchValue = (instance.name + "_" + serviceName).toLowerCase();
+    //     return instance.services.findIndex(x => (x.spec ? x.spec.name.toLowerCase().indexOf(searchValue) > -1 : false)) > -1 ? 1 : -1;
+    // }
 
     const getContainerState = (instance: InstanceGetDto, containerName: string): number => {
         if (!instance.containers || !containerName) return 0;
@@ -220,11 +227,11 @@ export default () => {
     //     }) < 0;
     // }
 
-    const isInstanceAllServiceStoped = (instance: InstanceGetDto): boolean => {
-        return getInstanceAllService(instance).findIndex((service) => {
-            return getServiceState(instance, service) === 1;
-        }) < 0;
-    }
+    // const isInstanceAllServiceStoped = (instance: InstanceGetDto): boolean => {
+    //     return getInstanceAllService(instance).findIndex((service) => {
+    //         return getServiceState(instance, service) === 1;
+    //     }) < 0;
+    // }
 
     const isInstanceAllContainerStarted = (instance: InstanceGetDto): boolean => {
         return getInstanceAllService(instance).findIndex((service) => {
@@ -243,16 +250,16 @@ export default () => {
         return instance.commands.findIndex(x => x.templateCommandId === templateCommand.id && x.inspect?.running) > -1;
     }
 
-    const getReplacedDockerCompose = (instance: InstanceGetDto): any => {
-        if (instance.template) {
-            let dockerComposeJson = JSON.stringify(instance.template.dockerComposeObj);
-            for (const key in instance.environments) {
-                const value = instance.environments[key];
-                while (dockerComposeJson.indexOf(`{${key}}`) > -1) dockerComposeJson = dockerComposeJson.replace(`{${key}}`, value);
-            }
-            return JSON.parse(dockerComposeJson);
-        }
-    }
+    // const getReplacedDockerCompose = (instance: InstanceGetDto): any => {
+    //     if (instance.template) {
+    //         let dockerComposeJson = JSON.stringify(instance.template.dockerComposeObj);
+    //         for (const key in instance.environments) {
+    //             const value = instance.environments[key];
+    //             while (dockerComposeJson.indexOf(`{${key}}`) > -1) dockerComposeJson = dockerComposeJson.replace(`{${key}}`, value);
+    //         }
+    //         return JSON.parse(dockerComposeJson);
+    //     }
+    // }
 
     const getTemplateCascaderOptions = (): CascaderOptionType[] => {
         const templateCascaderItems: CascaderOptionType[] = [];
@@ -307,6 +314,10 @@ export default () => {
 
     useEffect(() => {
         load();
+
+        User_GetOwn().then(res => {
+            setUser(res?.data?.data);
+        });
     }, []);
 
     useEffect(() => {
@@ -330,12 +341,15 @@ export default () => {
     }, [selectedTemplate]);
 
     const templateCascaderItems = getTemplateCascaderOptions();
-    const baseUrl = 'http://docker-srv';
+    let baseUrl = (user?.host ? user.host : window.location.hostname);
+    if(baseUrl.length > 1) {
+        if(baseUrl.indexOf('http') < 0) baseUrl = 'http://' + baseUrl;
+    }
 
     return <div className="page-instances" onMouseEnter={() => setIsOnScreen(true)} onMouseLeave={() => setIsOnScreen(false)}>
         <div className="wrapper">
             <div className="title-bar">
-                <h4>Instances</h4>
+                <h4>Instances (Host: {user?.host ? user.host : 'Self Hosted'})</h4>
                 <button className="btn btn-primary" onClick={load}>Reload</button>
                 <button className="btn btn-info" onClick={() => setModal('help')}>Help</button>
             </div>
@@ -366,36 +380,16 @@ export default () => {
                         </td>
                         <td>
                             <div className="ports">
-                                {instance.services?.sort((x1,x2) => (x1.spec.name > x2.spec.name ? 1 : (x1.spec.name < x2.spec.name ? -1 : 0))).map((service, i) => {
-                                    let dockerComposeServiceName: any;
-                                    try {
-                                        const dockerCompose = getReplacedDockerCompose(instance);
-                                        const serviceNames = Object.keys(dockerCompose.services);
-                                        for (let k = 0; k < serviceNames.length; k++) {
-                                            const serviceName = serviceNames[k];
-                                            if (service.spec.name.toLowerCase().endsWith(serviceName.toLowerCase())) {
-                                                dockerComposeServiceName = serviceName;
-                                                break;
-                                            }
-                                        }
-                                    } catch { }
+                                {instance.containers?.sort((x1, x2) => (x1.names[0] > x2.names[0] ? 1 : (x1.names[0] < x2.names[0] ? -1 : 0))).map((container, i) => {
 
                                     return <div className="service" key={i}>
-                                        {service.endpoint?.ports?.map((port, j) => {
-                                            // let dockerComposeServicePort: any;
-                                            // if (dockerComposeService) {
-                                            //     try {
-                                            //         dockerComposeServicePort = dockerComposeService.ports.find((x: any) => x.published === port.publishedPort);
-                                            //     } catch {
-
-                                            //     }
-                                            // }
-                                            const containerState = (dockerComposeServiceName ? getContainerState(instance, dockerComposeServiceName) : -1);
+                                        {container?.ports?.sort((x1, x2) => x1.publicPort > x2.publicPort ? 1 : (x1.publicPort < x2.publicPort ? -1 : 0))?.map((port, j) => {
 
                                             let portname = '';
                                             for (const key in instance.environments) {
                                                 const value = instance.environments[key];
-                                                if (value?.toString() === port?.publishedPort?.toString()) {
+
+                                                if (value?.toString() === port?.publicPort?.toString()) {
                                                     portname = key
                                                         .replace('EXPOSED_', '')
                                                         .replace('_EXPOSED', '')
@@ -409,11 +403,7 @@ export default () => {
                                             return <span className="port" key={j} title={portname}>
                                                 <span className="name">{portname} = </span>
                                                 <span className="value">
-                                                    {containerState === 1 ?
-                                                        <a href={`${baseUrl}:${port.publishedPort}`} target="_blank" rel="noopener noreferrer">{port.publishedPort}</a>
-                                                        : port.publishedPort}
-                                                    {/* :
-                                                    {dockerComposeServicePort?.name ? dockerComposeServicePort.name : port.targetPort} */}
+                                                    <a href={`${baseUrl}:${port.publicPort}`} target="_blank" rel="noopener noreferrer">{port.publicPort}</a>
                                                 </span>
                                             </span>;
                                         })}
@@ -424,17 +414,19 @@ export default () => {
                         <td>
                             <div className="services">
                                 {getInstanceAllService(instance).map((service, i) => {
-                                    const serviceState = getServiceState(instance, service);
+                                    // const serviceState = getServiceState(instance, service);
+                                    const container = getContainerByServiceName(instance, service);
                                     const containerState = getContainerState(instance, service);
                                     return <Tooltip key={i} title={<>
-                                        <div>Name : {service}</div>
-                                        <div>Service State: {(serviceState === 1 ? 'Running' : (serviceState === 0 ? 'NA' : 'Down'))}</div>
-                                        <div>Container State : {(containerState === 1 ? 'Running' : (containerState === 0 ? 'NA' : 'Down'))}</div>
+                                        <div>{service}</div>
+                                        {container ? <>
+                                            <div>Image : {container?.image}</div>
+                                        </> : null}
+                                        <div>State : {(containerState === 1 ? 'Running' : (containerState === 0 ? 'N/A' : 'Down'))}</div>
                                     </>} placement={'top'}>
                                         <span className={
                                             (containerState === 1 ? ' container-running' : '') +
-                                            (serviceState === 1 ? ' service-running' : '') +
-                                            (serviceState === 0 || containerState === 0 ? '' : ' shutdown')
+                                            (containerState === 0 ? '' : ' shutdown')
                                         }></span>
                                     </Tooltip>
                                 })}
@@ -461,9 +453,8 @@ export default () => {
                         </td>
                         <td>
                             {instance.template ? <div className="actions">
-                                {isInstanceAllContainerStarted(instance) || !isInstanceAllServiceStoped(instance) ? <button className="btn btn-danger" disabled={instance.isStopping} onClick={() => stopInstance(instance)}>{instance.isStopping ? 'Stopping...' : 'Stop'}</button> : null}
-                                {!isInstanceAllContainerStarted(instance) || isInstanceAllContainerStoped(instance) ? <button className="btn btn-success" disabled={instance.isStarting} onClick={() => startInstance(instance)}>{instance.isStarting ? 'Starting...' : 'Start'}</button> : null}
-
+                                {!isInstanceAllContainerStoped(instance) ? <button className="btn btn-danger" disabled={instance.isStopping} onClick={() => stopInstance(instance)}>{instance.isStopping ? 'Removing...' : 'Remove'}</button> : null}
+                                {!isInstanceAllContainerStarted(instance) ? <button className="btn btn-success" disabled={instance.isStarting} onClick={() => startInstance(instance)}>{instance.isStarting ? 'Starting...' : 'Start'}</button> : null}
                                 <button className="btn btn-primary" onClick={() => showEnvironments(instance)}>ENV</button>
                                 {instance.template.description ? <button className="btn btn-info" onClick={() => showDescription(instance)}>Description</button> : null}
                                 {instance.template.commands?.length && isInstanceAllContainerStarted(instance) ? <Dropdown overlay={<Menu>
@@ -498,14 +489,14 @@ export default () => {
                             }} />
                     </Col>
                 </Row>
-                <Row>
+                {selectedInstance ? <Row>
                     <Col xs={12} className="p-2">
-                        <Button type="primary" htmlType="submit" block>Save</Button>
+                        <Button type="primary" htmlType="submit" block disabled={!isInstanceAllContainerStoped(selectedInstance)}>{isInstanceAllContainerStoped(selectedInstance) ? 'Save' : 'First Stop Containers'}</Button>
                     </Col>
                     <Col xs={12} className="p-2">
                         <Button type="primary" htmlType="button" block onClick={() => setModal('')} danger>Close</Button>
                     </Col>
-                </Row>
+                </Row> : null}
                 {nightlyBuildLogs?.length ? <div>
                     <h2>Nightly Build Logs</h2>
                     <ul>
@@ -522,20 +513,35 @@ export default () => {
                 <p>برای استفاده از سرویس مدیریت کانتینر های داکر موارد زیر را مطالعه فرمایید</p>
                 <hr />
                 <ul>
-                    <li>ستون File Manager برای مدیریت فایل های درون کانتینر میباشد و در صورتی که در دسترس نبود میتوانید در منوی More / Run File Manager را اجرا نمایید.</li>
-                    <li>برای استفاده از دیتابیس مقدار docker-srv, port را در Sql Server Management Studio وارد نمایید.</li>
-                    <li>توسعه دهندگان بک اند در صورتی که IIS فایل ها را لاک کرده بود میتوانید از امکان Start , Stop App Pools استفاده نمایید.</li>
-                    <li>درصورتی که میخواهید تغییرات جدید بر روی دیتابیس اعمال گردد از گزینه ی More / Update Database استفاده نمایید. ستون DB State نمایشگر وضعیت دیتابیس میباشد. (این دستور حداقل 15 دقیقه زمان نیاز خواهد داشت)</li>
+                    <li>ستون Name :‌ به ازای هر کاربر تعدادی Instance (حداقل یکی) قرار داده می شود و در هر Instance تنها میتوان یک Template را استارت نمود و در صورت نیاز به نسخه دیگر ابتدا باید آن را استاپ کنید و با تغییر Template مجددا آن را استارت نمود</li>
+                    <li>ستون Template : تعدادی الگو در سیستم تعریف شده که مهمترین آنها برنچ های مختلف دیدگاه بوده که با توجه به فایل های تولید شده توسط بیلد شبانه طی زمانبندی Image ها و Template ها ایجاد میگردد. نهایت عمر هر Image و Template یک هفته میباشد.</li>
+                    <li>ستون Ports :  هر Template حاوی تعدادی Port میباشد که از بیرون از کانتینر قابل دسترس میباشد مثل :‌SQLSERVER , Didgah5 , Didgah4, ....</li>
                     <li>
-                        <span>کانتینر ها میتوانند به حالات مختلفی اجرا گردند که به شرح  زیر میباشد</span>
+                        <span>ستون Services : هر Template حاوی تعدادی سرویس میباشد که در 4 حالت در این داشبورد به نمایش در می آیند </span>
                         <ul>
-                            <li>db : فقط دیتابیس که شامل دیتا های قدیم در وضعیت آخرین بروزرسانی</li>
-                            <li>db-isolate : فقط دیتابیس به صورت خام و بدون دیتا های گذشته در وضعیت تاریخ Image</li>
-                            <li>full : هم دیدگاه هم دیتابیس در وضعیت آخرین بروزرسانی دیتابیس</li>
-                            <li>full-isolate : هم دیدگاه هم دیتابیس در وضعیت تاریخ Image</li>
+                            <li>مشکی :‌ وضعیت نامشخص می باشد (هنوز اطلاعات از سرور دریافت نشده است)</li>
+                            <li>قرمز :‌ سرویس و کانتینر موجود نمیباشد</li>
+                            <li>زرد :‌ یا سرویس یا کانتینر در حالت فعال میباشد</li>
+                            <li>سبز : ‌هم سرویس هم کانتینر فعال بوده و در این وضعیت قابل استفاده می باشد</li>
                         </ul>
                     </li>
-                    <li>برای تغییر تاریخ و برنچ خود ابتدا کانتینر مربوطه را Stop کرده سپس با زدن روی دکمه ستون Image و انتخاب یکی از Image ها و Save Change میتوانید Image خود را به تاریخ و برنچ مربوطه تغییر دهید و مجددا کانتینر را Start نمایید</li>
+                    <li>
+                        <span>ستون Commands : در این ستون وضعیت کامند های اجرا شده نمایش داده شده و لاگ آنها با کلیک بر روی هر کدام قابل دانلود میباشد. هر کامند این ستون میتواند در سه حالت باشد :‌</span>
+                        <ul>
+                            <li>Running : در حال اجرا بود در برخی کامند ها مثل File Broser حالت Running یعنی قابل استفاده میباشد و نباید ژایان یابد چرا که به ژورت مشخصی گوش میدهد و کامند زنده خواهد ماند</li>
+                            <li>Error : اجرا شده و همراه با خطا ژایان یافته است</li>
+                            <li>Success : اجرا شده و بدون خطا ژایان یافته</li>
+                        </ul>
+                    </li>
+                    <li>
+                        <span>ستون Actions : مجموعه دستوراتی است که میتوان رو Instance انجام داد. تعدادی از آنها رو مورد بررسی قرار میدهیم :‌</span>
+                        <ul>
+                            <li>Start : درخواست ساخت سرویس و کانتینر را به سرور میفرستد که پس از ساخت سرویس ها ژاسخ مثبت داده خواهد شد و پس از چند ثانیه باید زرد شود و سرویس به حالت Running در بیاید و چند ثانیه بعد کانتینر ساخته شده و سرویس ها سبز میشود اگر کانتینر ساخته نشد به معنای آن است که ایمیج به درستی ساخته نشده است.</li>
+                            <li>Stop : سرویس ها در حالت زرد و یا سبز باشد این دستور بعد از چند ثانیه سرویس و کانتینر را حذف خواهد کرد</li>
+                            <li>Env : نمایش تنظیمات Template انتخاب شده</li>
+                            <li>Commands : هر Template شامل تعدادی Command میباشد که درون کانتینر خود اجرا میگردد و نتیجه آن در ستون Command قابل مشاهده است</li>
+                        </ul>
+                    </li>
                 </ul>
             </div>
         </Modal>

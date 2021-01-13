@@ -11,7 +11,7 @@ namespace Chargoon.ContainerManagement.Domain.Services
         GetArchiveFromContainerResponse ArchiveContainer(string id, GetArchiveFromContainerParameters dto);
         void Deploy(string stackName, string dockerCompose);
         void ExtractArchiveToContainerAsync(string id, ContainerPathStatParameters dto, Stream stream);
-        IEnumerable<ContainerListResponse> GetAllContainer();
+        IEnumerable<ContainerListResponse> GetAllContainer(bool all = false);
         IEnumerable<ImagesListResponse> GetAllImage();
         IEnumerable<NodeListResponse> GetAllNode();
         IEnumerable<SwarmService> GetAllService();

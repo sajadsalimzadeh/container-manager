@@ -8,6 +8,7 @@ namespace Chargoon.ContainerManagement.Domain.Dtos.Users
     {
         public string Username { get; set; }
         public string Password { get; set; }
+        public string Host { get; set; }
         public IEnumerable<string> Roles { get; set; }
         public string Instances { get; set; }
     }

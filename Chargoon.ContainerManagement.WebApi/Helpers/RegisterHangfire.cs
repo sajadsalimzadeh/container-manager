@@ -191,18 +191,9 @@ namespace Chargoon.ContainerManagement.WebApi.Helper
 			try
 			{
 				var imageService = services.BuildServiceProvider().GetService<IImageService>();
-				var image = imageService.Get(imageId);
-				if (image != null)
-				{
-					logger.LogInformation($"Hangfire: {nameof(BuildImage)} Start");
-					imageService.Build(imageId);
-					logger.LogInformation($"Hangfire: {nameof(BuildImage)} End");
-				}
-				else
-				{
-					logger.LogInformation($"Hangfire: image not found");
-
-				}
+				logger.LogInformation($"Hangfire: {nameof(BuildImage)} Start");
+				imageService.Build(imageId);
+				logger.LogInformation($"Hangfire: {nameof(BuildImage)} End");
 			}
 			catch (Exception ex)
 			{

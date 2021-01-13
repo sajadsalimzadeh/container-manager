@@ -50,7 +50,12 @@ namespace Chargoon.ContainerManagement.Service
 		private DirectoryInfo GetDirInfo(string basePath, string name)
 		{
 			var dirPath = Path.Combine(basePath, name);
-			if (!Directory.Exists(dirPath)) Directory.CreateDirectory(dirPath);
+			if (!Directory.Exists(dirPath))
+			{
+				logger.LogInformation("Creating logs directory");
+				Directory.CreateDirectory(dirPath);
+				logger.LogInformation("Created logs directory");
+			}
 			return new DirectoryInfo(dirPath);
 		}
 
@@ -107,6 +112,7 @@ namespace Chargoon.ContainerManagement.Service
 			{
 				var image = Get(imageId);
 
+				logger.LogInformation($"Get Log Path With : {image.BuildPath}");
 				var logDirInfo = GetLogDirInfo(image.BuildPath);
 				var logDirPath = Path.Combine(logDirInfo.FullName, DateTime.Now.ToString("yyyy-MM-dd-HH-mm-ss"));
 
@@ -116,7 +122,7 @@ namespace Chargoon.ContainerManagement.Service
 
 				foreach (var scriptFile in scriptDirInfo.GetFiles())
 				{
-					if (!scriptFile.Name.EndsWith(".bat")) continue;
+					if (!scriptFile.Name.EndsWith(".ps1")) continue;
 					var logFilePath = Path.Combine(logDirPath, scriptFile.Name.Substring(0, scriptFile.Name.Length - 4) + ".log");
 					if (File.Exists(scriptFile.FullName))
 					{

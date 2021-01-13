@@ -19,6 +19,13 @@ export interface ServiceSpec {
     endpointSpec: any;
 }
 
+export interface Port {
+    ip: string;
+    privatePort: number;
+    publicPort: number;
+    type: string;
+}
+
 export interface PortConfig {
     name?: string;
     protocol?: string;
@@ -82,7 +89,7 @@ export interface ContainerListResponse {
     imageID: string;
     command: string;
     created: string;
-    Ports: PortConfig[];
+    ports: Port[];
     sizeRw: number;
     sizeRootFs: number;
     labels: any;

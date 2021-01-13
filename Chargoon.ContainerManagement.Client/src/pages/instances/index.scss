@@ -107,15 +107,15 @@
                 background-color: #df6057;
             }
 
-            &.service-running {
-                background-color: #faff00;
-            }
+            // &.service-running {
+            //     background-color: #faff00;
+            // }
+
+            // &.container-running {
+            //     background-color: #faff00;
+            // }
 
             &.container-running {
-                background-color: #faff00;
-            }
-
-            &.service-running.container-running {
                 background-color: #1cac64;
             }
 

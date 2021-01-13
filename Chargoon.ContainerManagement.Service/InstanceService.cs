@@ -2,10 +2,12 @@
 using Chargoon.ContainerManagement.Domain.DataModels;
 using Chargoon.ContainerManagement.Domain.Dtos.Instances;
 using Chargoon.ContainerManagement.Domain.Dtos.TemplateCommands;
+using Chargoon.ContainerManagement.Domain.Models;
 using Chargoon.ContainerManagement.Domain.Services;
 using Chargoon.ContainerManagement.Service.Mappings;
 using Docker.DotNet.Models;
 using Microsoft.Extensions.Caching.Memory;
+using Microsoft.Extensions.Options;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -19,6 +21,7 @@ namespace Chargoon.ContainerManagement.Service
 		private readonly IUserRepository userRepository;
 		private readonly IMemoryCache memoryCache;
 		private readonly ICommandService commandService;
+		private readonly AppSettings appSettings;
 		private readonly ITemplateRepository templateRepository;
 		private readonly ITemplateCommandRepository templateCommandRepository;
 		private readonly IAuthenticationService authenticationService;
@@ -29,6 +32,7 @@ namespace Chargoon.ContainerManagement.Service
 			IUserRepository userRepository,
 			IMemoryCache memoryCache,
 			ICommandService commandService,
+			IOptions<AppSettings> appSettings,
 			ITemplateRepository templateRepository,
 			ITemplateCommandRepository templateCommandRepository,
 			IAuthenticationService authenticationService
@@ -39,6 +43,7 @@ namespace Chargoon.ContainerManagement.Service
 			this.userRepository = userRepository;
 			this.memoryCache = memoryCache;
 			this.commandService = commandService;
+			this.appSettings = appSettings.Value;
 			this.templateRepository = templateRepository;
 			this.templateCommandRepository = templateCommandRepository;
 			this.authenticationService = authenticationService;
@@ -192,7 +197,7 @@ namespace Chargoon.ContainerManagement.Service
 		private InstanceGetDto Start(Instance instance)
 		{
 			if (instance == null) throw new ArgumentNullException(nameof(instance));
-			Stop(instance);
+			//Stop(instance);
 			var dto = instance.ToDto();
 			if (instance.Template == null) throw new Exception("Instance does not have any template");
 			if (dto.Template.DockerCompose == null) throw new Exception("Docker Compose Failed to Read");
@@ -201,24 +206,30 @@ namespace Chargoon.ContainerManagement.Service
 			{
 				dockerCompose = dockerCompose.Replace("{" + item.Key + "}", item.Value);
 			}
-			if(!string.IsNullOrEmpty(instance.Template.BeforeStartCommand))
+			if (appSettings.Docker.SelfHostEnable)
 			{
-				var command = instance.Template.BeforeStartCommand;
-				foreach (var item in dto.Environments)
+				if (!string.IsNullOrEmpty(instance.Template.BeforeStartCommand))
 				{
-					command = command.Replace("{" + item.Key + "}", item.Value);
+					var command = instance.Template.BeforeStartCommand;
+					foreach (var item in dto.Environments)
+					{
+						command = command.Replace("{" + item.Key + "}", item.Value);
+					}
+					commandService.Execute(command);
 				}
-				commandService.Execute(command);
 			}
 			dockerService.Deploy(instance.User.Username + "_" + instance.Name, dockerCompose);
-			if (!string.IsNullOrEmpty(instance.Template.AfterStartCommand))
+			if (appSettings.Docker.SelfHostEnable)
 			{
-				var command = instance.Template.AfterStartCommand;
-				foreach (var item in dto.Environments)
+				if (!string.IsNullOrEmpty(instance.Template.AfterStartCommand))
 				{
-					command = command.Replace("{" + item.Key + "}", item.Value);
+					var command = instance.Template.AfterStartCommand;
+					foreach (var item in dto.Environments)
+					{
+						command = command.Replace("{" + item.Key + "}", item.Value);
+					}
+					commandService.Execute(command);
 				}
-				commandService.Execute(command);
 			}
 			return instance.ToDto();
 		}
@@ -227,24 +238,30 @@ namespace Chargoon.ContainerManagement.Service
 		{
 			if (instance == null) throw new ArgumentNullException(nameof(instance));
 			var dto = instance.ToDto();
-			if (!string.IsNullOrEmpty(instance.Template.BeforeStopCommand))
+			if (appSettings.Docker.SelfHostEnable)
 			{
-				var command = instance.Template.BeforeStopCommand;
-				foreach (var item in dto.Environments)
+				if (!string.IsNullOrEmpty(instance.Template.BeforeStopCommand))
 				{
-					command = command.Replace("{" + item.Key + "}", item.Value);
+					var command = instance.Template.BeforeStopCommand;
+					foreach (var item in dto.Environments)
+					{
+						command = command.Replace("{" + item.Key + "}", item.Value);
+					}
+					commandService.Execute(command);
 				}
-				commandService.Execute(command);
 			}
 			dockerService.Undeploy(instance.User.Username, instance.Name);
-			if (!string.IsNullOrEmpty(instance.Template.AfterStopCommand))
+			if (appSettings.Docker.SelfHostEnable)
 			{
-				var command = instance.Template.AfterStopCommand;
-				foreach (var item in dto.Environments)
+				if (!string.IsNullOrEmpty(instance.Template.AfterStopCommand))
 				{
-					command = command.Replace("{" + item.Key + "}", item.Value);
+					var command = instance.Template.AfterStopCommand;
+					foreach (var item in dto.Environments)
+					{
+						command = command.Replace("{" + item.Key + "}", item.Value);
+					}
+					commandService.Execute(command);
 				}
-				commandService.Execute(command);
 			}
 			memoryCache.TryGetValue(GetTemplateCommandExecsCacheName(), out List<TemplateCommandExecDto> tces);
 

@@ -23,6 +23,7 @@ namespace Chargoon.ContainerManagement.Domain.DataModels
 		public string BeforeStopCommand { get; set; }
 		public string AfterStopCommand { get; set; }
         public bool IsActive { get; set; }
+        public bool IsVisible { get; set; }
 
         public IEnumerable<TemplateCommand> Commands { get; set; }
     }

@@ -96,5 +96,18 @@ namespace Chargoon.ContainerManagement.Service
             var userId = authenticationService.UserId;
             return ChangePassword(userId, dto);
         }
+
+        public UserGetDto ChangeProfile(int id, UserChangeProfileDto dto)
+        {
+            var user = userRepository.Get(id);
+            user.Host = dto.Host;
+            return userRepository.Update(user).ToDto();
+        }
+
+        public UserGetDto ChangeOwnProfile(UserChangeProfileDto dto)
+        {
+            var userId = authenticationService.UserId;
+            return ChangeProfile(userId, dto);
+        }
     }
 }

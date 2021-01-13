@@ -10,8 +10,10 @@ namespace Chargoon.ContainerManagement.Domain.Services
     {
         UserGetDto Add(UserAddDto dto);
         UserGetDto ChangeOwnPassword(UserChangePasswordDto dto);
-        UserGetDto ChangePassword(int id, UserChangePasswordDto dto);
-        IEnumerable<UserGetDto> GetAll();
+        UserGetDto ChangeOwnProfile(UserChangeProfileDto dto);
+		UserGetDto ChangePassword(int id, UserChangePasswordDto dto);
+        UserGetDto ChangeProfile(int id, UserChangeProfileDto dto);
+		IEnumerable<UserGetDto> GetAll();
         UserGetDto GetById(int id);
         UserGetDto GetOwn();
         UserGetDto ResetPassword(int id, UserResetPasswordDto dto);

@@ -4,8 +4,8 @@ using System.Text;
 
 namespace Chargoon.ContainerManagement.Domain.Dtos.Users
 {
-    public class UserChangeDto
-    {
+    public class UserChangeProfileDto
+	{
 		public string Host { get; set; }
 	}
 }

@@ -15,7 +15,9 @@ namespace Chargoon.ContainerManagement.Data.Migrations
             new Migration_20201014_Initial(),
             new Migration_20201106_Command(),
             new Migration_20201109_Description(),
+            new Migration_20201109_RunOnStartup(),
             new Migration_20201121_LifeTime(),
+            new Migration_20201228_Host(),
         };
 
         public Migrator(IConfiguration configuration) : base(configuration)

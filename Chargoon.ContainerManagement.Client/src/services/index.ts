@@ -21,7 +21,8 @@ import {
   ImageAddDto,
   ImageChangeDto,
   ImageBuildLogDto,
-  CustomeNightlyBuildLog
+  CustomeNightlyBuildLog,
+  UserChangeProfileDto
 } from "../models";
 import Cookies from 'js-cookie';
 
@@ -102,6 +103,7 @@ export function Instance_Remove(id: number) { return axios.delete<OperationResul
 export function User_GetAll() { return axios.get<OperationResult<UserGetDto[]>>(`Users`); }
 export function User_GetOwn() { return axios.get<OperationResult<UserGetDto>>(`Users/Own`); }
 export function User_ChangePassword(id: number, dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/${id}/ChangePassword`, dto); }
+export function User_ChangeOwnProfile(dto: UserChangeProfileDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/Own/ChangeProfile`, dto); }
 export function User_ChangeOwnPassword(dto: UserChangePasswordDto) { return axios.patch<OperationResult<UserGetDto>>(`Users/Own/ChangePassword`, dto); }
 export function User_Add(dto: UserAddDto) { return axios.post<OperationResult<UserGetDto>>(`Users`, dto); }
 export function User_ResetPassword(id: number, dto: UserResetPasswordDto) { return axios.post<OperationResult<UserGetDto>>(`Users/${id}`, dto); }
